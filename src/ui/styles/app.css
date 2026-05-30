@@ -1,0 +1,583 @@
+/* Convertly UI — Floating Design (Samsung One UI 9) style.
+   Component rules adapted from the read-only mockups' components.css.
+   Runs in the persistent window the background worker opens (app.html). */
+
+@import "./tokens.css";
+
+/* `.group`/`.seg` set display:flex, which beats the UA `[hidden]{display:none}`.
+   Force hidden to win so `el.hidden = true` actually hides cards/rows. */
+[hidden] { display: none !important; }
+
+/* Respect reduced-motion: drop the row-enter, pill slide, theme crossfade and
+   other decorative tweens. The progress spinner keeps turning — it is a
+   functional state cue, not decoration. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .spinner {
+    animation-duration: 720ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Make native controls (the <select> dropdown, scrollbars) follow the theme —
+   otherwise Chrome renders the option list white-on-white in dark mode. */
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
+body {
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Smooth dark<->light. `.theming` is added to <body> only for the duration of a
+   theme toggle, so EVERY element crossfades together (symmetric both ways), then
+   it's removed so normal hovers stay snappy. (The body gradient is a background
+   image and can't tween — surfaces/text/borders/icons carry the transition.) */
+body.theming,
+body.theming * {
+  transition: background-color var(--dur-base) ease-in-out,
+    border-color var(--dur-base) ease-in-out,
+    color var(--dur-base) ease-in-out,
+    fill var(--dur-base) ease-in-out !important;
+}
+/* Exclude the file rows from the crossfade: a big list is hundreds of nodes and
+   transitioning all of them janks the toggle. They snap to the new theme (text
+   on a transparent surface — barely noticeable) while the cards/chrome fade. */
+body.theming .filelist,
+body.theming .filelist * {
+  transition: none !important;
+}
+
+/* ---- Shell: a centred card that hugs its content, capped width on big windows ---- */
+.shell {
+  display: flex;
+  flex-direction: column;
+}
+/* The shell fills the window. The topbar + content are capped & centred so they
+   don't stretch on a maximised window, but the action bar spans the FULL width
+   (its inner row is capped to match). The dropzone grows to absorb spare height. */
+body.is-tab .shell {
+  width: 100%;
+  min-height: 100vh;
+}
+.topbar,
+.content {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* ---- Topbar ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.brand__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-bubble);
+  background: linear-gradient(135deg, var(--accent), #9b6bff);
+  box-shadow: 0 0 16px var(--accent-glow);
+  flex-shrink: 0;
+}
+.brand__name {
+  margin: 0;
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-snug);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand__tagline {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+/* ---- Content area fills the shell; scrolls internally when tall ---- */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.content::-webkit-scrollbar { width: 10px; }
+.content::-webkit-scrollbar-thumb {
+  background: var(--surface-toggle-off);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ---- Support (Ko-fi / PayPal) dropdown ---- */
+.support { position: relative; }
+.support__menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  min-width: 200px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--surface-overlay-strong);
+  border: 1px solid var(--border-overlay);
+  box-shadow: var(--shadow-overlay);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  animation: ddIn 140ms var(--ease-emphasis);
+}
+.support.is-open .support__menu { display: flex; }
+.support__title {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  padding: 2px 8px 6px;
+  text-align: center;
+}
+.support__link {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--surface-toggle-off);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  text-decoration: none;
+  text-align: center;
+  transition: background var(--dur-fast);
+}
+.support__link:hover { background: var(--accent-soft); color: var(--accent); }
+.support__btn svg,
+[data-support-btn] svg { fill: currentColor; transform-origin: center; }
+
+/* One-shot pulse on the ♥ when a conversion completes (added/removed in JS).
+   ~4 beats then stops. Disabled under prefers-reduced-motion via the global
+   rule at the top of this file. */
+[data-support-btn].is-beating { color: var(--accent); }
+[data-support-btn].is-beating svg { animation: heartbeat 800ms var(--ease-emphasis) 4; }
+
+@keyframes heartbeat {
+  0%   { transform: scale(1); }
+  14%  { transform: scale(1.6); }
+  28%  { transform: scale(1); }
+  42%  { transform: scale(1.45); }
+  60%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+/* ---- Notice (file-limit etc.) ---- */
+.notice {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(212, 157, 24, 0.15);
+  border: 1px solid rgba(212, 157, 24, 0.3);
+  color: var(--status-warn);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+/* ---- Group card (mockup .group) ---- */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-card);
+  padding: 18px;
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+.group > h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+/* Sub-container of dynamically-built format rows — same rhythm as the group. */
+.group [data-formats] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.group__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+.group__label {
+  flex: 1;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+/* ---- Dropzone (mockup .dropzone) ---- */
+.dropzone {
+  flex: 0 0 auto;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px;
+  border: 2px dashed var(--border-subtle);
+  border-radius: var(--r-card);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  text-align: center;
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast);
+  cursor: pointer;
+}
+/* In the empty state the dropzone grows to fill the window (no voids); once
+   files are queued it returns to a fixed size and the list takes over. */
+body.is-empty .dropzone { flex: 1 1 auto; }
+.dropzone:hover { border-color: var(--accent); background: var(--input-bg-focus); }
+.dropzone:focus-visible { border-color: var(--accent); }
+.dropzone--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  transform: scale(1.005);
+}
+.dropzone__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface-toggle-off);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.dropzone__icon svg { width: 28px; height: 28px; fill: currentColor; }
+.dropzone__title { font-size: var(--fs-body); font-weight: var(--fw-semi); color: var(--text-primary); }
+.dropzone__sub { font-size: var(--fs-sm); color: var(--text-secondary); }
+
+/* ---- Segmented (horizontal; mockup uses .seg-v, deviated for narrow popup) ---- */
+.seg {
+  position: relative;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-toggle-off);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-tile);
+}
+/* Sliding active indicator behind the buttons. Fast-out, slow-in (ease-out). */
+.seg__pill {
+  position: absolute;
+  z-index: 0;
+  border-radius: calc(var(--r-tile) - 4px);
+  background: var(--accent);
+  transition: left var(--dur-base) var(--ease-emphasis),
+    top var(--dur-base) var(--ease-emphasis),
+    width var(--dur-base) var(--ease-emphasis),
+    height var(--dur-base) var(--ease-emphasis);
+}
+.seg__pill.no-anim { transition: none; }
+.seg__btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 8px 14px;
+  border: none;
+  border-radius: calc(var(--r-tile) - 4px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: color var(--dur-base) var(--ease-emphasis);
+}
+.seg__btn:hover { color: var(--text-primary); }
+.seg__btn--active { color: #fff; }
+
+/* ---- Quality range (native input, accent-tinted; mockup slider-pill is display-only) ---- */
+input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+}
+.quality-val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  min-width: 38px;
+  text-align: right;
+}
+
+/* ---- Switch (mockup .switch: circular toggle) ---- */
+.switch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--text-tertiary);
+  background: transparent;
+  position: relative;
+  transition: border-color var(--dur-base) var(--ease-spring);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+.switch.is-on { border-color: var(--accent); }
+.switch.is-on::after { transform: scale(1); }
+.switch:hover { border-color: var(--text-secondary); }
+.switch.is-on:hover { border-color: var(--accent); }
+
+/* ---- File list (mockup .file-row) ---- */
+/* One column of separate category cards (each a `.group` tile). Gap matches the
+   spacing between the other content cards. */
+.filelist-wrap { display: flex; flex-direction: column; gap: 14px; }
+.filelist { display: flex; flex-direction: column; }
+.fileitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+.fileitem:first-child { border-top: none; }
+
+/* Smooth entry when a new file is added (does not replay on re-render). */
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.fileitem--enter { animation: rowIn var(--dur-base) var(--ease-spring); }
+
+/* Per-file "→ [FORMAT ▾]" target selector */
+.fileitem__convert { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.fileitem__arrow { color: var(--text-tertiary); font-size: 14px; }
+
+/* ---- Custom format dropdown (replaces native <select>) ---- */
+.fmt-select { position: relative; }
+.fmt-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px 5px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-toggle-off);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semi);
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.fmt-select__trigger:hover { border-color: var(--accent); }
+.fmt-select__trigger svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  opacity: 0.6;
+  transition: transform var(--dur-fast) var(--ease-emphasis);
+}
+.fmt-select.is-open .fmt-select__trigger { border-color: var(--accent); }
+.fmt-select.is-open .fmt-select__trigger svg { transform: rotate(180deg); }
+
+.fmt-select__menu {
+  display: none;            /* shown only when .fmt-select.is-open (class beats [hidden]) */
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
+  min-width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface-overlay-strong);
+  border: 1px solid var(--border-overlay);
+  box-shadow: var(--shadow-overlay);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  animation: ddIn 140ms var(--ease-emphasis);
+}
+.fmt-select.is-open .fmt-select__menu { display: flex; }
+.fmt-select__menu--up { top: auto; bottom: calc(100% + 6px); }
+@keyframes ddIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.fmt-select__opt {
+  text-align: left;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.fmt-select__opt:hover { background: var(--surface-hover); color: var(--text-primary); }
+.fmt-select__opt.is-active { background: var(--accent-soft); color: var(--accent); }
+.fbubble {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-bubble);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}
+.fileitem__info { flex: 1; min-width: 0; }
+.fileitem__name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fileitem__meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.fileitem__actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+/* ---- Badge (mockup .badge) ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-toggle-off);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.badge--accent { background: var(--accent-soft); color: var(--accent); }
+.badge--success { background: rgba(45, 164, 78, 0.18); color: var(--status-success); }
+.badge--error { background: rgba(209, 45, 58, 0.18); color: var(--status-error); }
+
+/* ---- Spinner (mockup .spinner) ---- */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-toggle-off);
+  border-top-color: var(--accent);
+  animation: spin 720ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Buttons (mockup .btn) ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--btn-border-color);
+  background: var(--surface-toggle-off);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-spring), transform var(--dur-fast);
+}
+.btn:hover { background: var(--surface-press); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn svg { width: 16px; height: 16px; fill: currentColor; }
+.btn--primary { background: var(--accent); color: #fff; }
+.btn--primary:hover { background: var(--accent-hover); }
+.btn--ghost { background: transparent; }
+.btn--ghost:hover { background: var(--surface-hover); }
+.btn--sm { padding: 7px 12px; font-size: var(--fs-xs); }
+.btn--icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+.btn--icon svg { width: 16px; height: 16px; }
+
+/* ---- Action bar (pinned bottom) ---- */
+.actionbar {
+  flex-shrink: 0; /* keep the buttons on-screen; the content area scrolls, not this */
+  padding: 12px 0;
+  background: var(--surface-overlay);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-top: 1px solid var(--border-overlay);
+}
+.actionbar__inner {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.actionbar__summary { font-size: var(--fs-sm); color: var(--text-secondary); }
+.actionbar__buttons { display: flex; gap: 8px; }
+.actionbar__warn {
+  box-sizing: border-box;
+  /* Align with the inner row: capped to 880 minus its 20px side padding, and
+     inset 20px on narrow windows so the box never touches/overflows the edges. */
+  width: calc(100% - 40px);
+  max-width: 840px;
+  margin: 0 auto 8px;
+  /* Match the format-selector pill's measured 41px. box-sizing is border-box,
+     so +2px for the 1px borders → 43px total (41px padding-box). */
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: var(--r-tile);
+  background: rgba(212, 157, 24, 0.15);
+  border: 1px solid rgba(212, 157, 24, 0.3);
+  color: var(--status-warn);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  line-height: 1.2;
+}

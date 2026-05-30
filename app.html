@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- color-scheme paints a dark (or light) canvas on the very first frame,
+         before CSS/JS load, so there's no white flash. We deliberately avoid an
+         inline <style> here: it made crxjs/vite race on the inline-CSS html
+         proxy and fail the build intermittently. Margins/exact colors come from
+         the bundled tokens.css/app.css; body margin is reset there. -->
+    <meta name="color-scheme" content="dark light" />
+    <title>Convertly</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/ui/main.ts"></script>
+  </body>
+</html>

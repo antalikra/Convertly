@@ -1,0 +1,32 @@
+{
+  "name": "convertly",
+  "version": "0.1.0",
+  "description": "Convert images (HEIC, JPG, PNG, WebP, AVIF, TIFF, BMP) and audio (MP3, WAV, FLAC) locally. Files never leave your device.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "prebuild": "npm run clean",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "zip": "node scripts/zip.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@jsquash/avif": "^2.1.1",
+    "fflate": "^0.8.2",
+    "heic-to": "^1.1.14",
+    "upng-js": "^2.1.0",
+    "utif2": "^4.1.0"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.28",
+    "@types/chrome": "^0.0.270",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  }
+}
