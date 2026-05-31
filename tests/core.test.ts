@@ -27,7 +27,8 @@ describe('ToolRegistry', () => {
     expect(reg.getById('images-to-pdf')).toBeDefined();
     expect(reg.getById('pdf-to-images')).toBeDefined();
     expect(reg.getById('pdf-to-text')).toBeDefined();
-    expect(reg.all()).toHaveLength(10);
+    expect(reg.getById('docx-to-pdf')).toBeDefined();
+    expect(reg.all()).toHaveLength(11);
   });
 
   it('rejects duplicate ids', () => {
@@ -81,6 +82,11 @@ describe('ToolRegistry', () => {
     const tool = reg.resolve(input('jpeg'), 'pdf');
     expect(tool?.id).toBe('images-to-pdf');
     expect(tool?.aggregate).toBe(true);
+  });
+
+  it('routes docx → pdf to the docx-to-pdf tool', () => {
+    const reg = buildRegistry();
+    expect(reg.resolve(input('docx', 'cv.docx'), 'pdf')?.id).toBe('docx-to-pdf');
   });
 
   it('routes pdf → jpg/png to the pdf-to-images tool (1→N)', () => {

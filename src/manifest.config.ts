@@ -28,7 +28,7 @@ export default defineManifest({
   // satisfied. `wasm-unsafe-eval` is kept as a forward-compatible safety net in
   // case a future heic-to build switches the asm.js decoder back to real WASM.
   // OPEN RISK: heic-to spins up its decoder in a blob-URL Web Worker — verify it
-  // is allowed under this CSP in a real MV3 load (see docs/ARCHITECTURE.md).
+  // is allowed under this CSP in a real MV3 load.
   content_security_policy: {
     extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
   },

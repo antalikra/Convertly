@@ -544,6 +544,23 @@ input[type="range"] {
 
 /* Combine presets (All in one / Each separate) */
 .combine { display: flex; gap: 8px; }
+
+/* DOCX → PDF (Visual) offscreen render host: clamp images/tables to page width
+   so they don't overflow sideways during html2canvas rasterisation. */
+.docx-render-host * { max-width: 100%; }
+.docx-render-host img { max-width: 100%; height: auto; display: block; }
+.docx-render-host table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.docx-render-host td,
+.docx-render-host th { word-break: break-word; border: 1px solid #ccc; padding: 4px; }
+
+/* While a batch is converting, lock the option/tab controls (they'd no-op). */
+body.is-busy .tabs,
+body.is-busy [data-slot="options"] {
+  pointer-events: none;
+  opacity: 0.55;
+  transition: opacity var(--dur-base) ease;
+}
+body.is-busy .filelist-wrap { pointer-events: none; }
 /* Dropdown / popover reveal — pops in from the trigger (scale + slide). */
 @keyframes ddIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.96); }
@@ -609,6 +626,16 @@ input[type="range"] {
   white-space: nowrap;
 }
 .badge--accent { background: var(--accent-soft); color: var(--accent); }
+/* Small "Beta" tag next to a feature label. */
+.badge--beta {
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  margin-left: 6px;
+}
 .badge--success { background: rgba(45, 164, 78, 0.18); color: var(--status-success); }
 .badge--error { background: rgba(209, 45, 58, 0.18); color: var(--status-error); }
 

@@ -5,6 +5,9 @@ export type ThemeMode = 'dark' | 'light';
 /** Operation chosen for PDF inputs (the document card's picker). */
 export type PdfOperation = 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext';
 
+/** DOCX → PDF rendering mode (Beta). raster = visual fidelity; reflow = selectable text. */
+export type DocxMode = 'raster' | 'reflow';
+
 export interface Settings {
   /** Target format for image inputs. */
   imageFormat: FormatId;
@@ -19,6 +22,8 @@ export interface Settings {
   pdfRotateAngle: number;
   /** Render scale for PDF → image (1 = 72dpi-ish, 2 ≈ retina). Bigger = sharper + heavier. */
   pdfImageScale: number;
+  /** DOCX → PDF mode (Beta). */
+  docxMode: DocxMode;
   theme: ThemeMode;
 }
 
@@ -30,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,
+  docxMode: 'raster',
   theme: 'dark',
 };
 

@@ -41,6 +41,9 @@ export interface OptionsView {
   /** Render-scale seg — shown for PDF → image operations. */
   showScale: boolean;
   pdfScale: number;
+  /** DOCX → PDF mode seg (Beta) — shown when a DOCX input is present. */
+  showDocx: boolean;
+  docxMode: string; // 'raster' | 'reflow'
 }
 
 export interface OptionsHandlers {
@@ -51,6 +54,7 @@ export interface OptionsHandlers {
   onRotate(angle: number): void;
   onCombine(mode: 'one' | 'separate'): void;
   onScale(scale: number): void;
+  onDocxMode(mode: 'raster' | 'reflow'): void;
 }
 
 export interface OptionsPanelHandle {
@@ -113,6 +117,14 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         ).join('')}
       </div>
     </div>
+    <div class="group__row" data-docx-row>
+      <span class="group__label">DOCX → PDF <span class="badge badge--accent badge--beta">Beta</span></span>
+      <div class="seg" data-docx-seg role="radiogroup" aria-label="DOCX to PDF mode">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-docx="raster">Visual</button>
+        <button type="button" class="seg__btn" role="radio" data-docx="reflow">Text</button>
+      </div>
+    </div>
   `;
 
   const formats = el.querySelector<HTMLElement>('[data-formats]')!;
@@ -129,6 +141,8 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
   const scaleRow = el.querySelector<HTMLElement>('[data-scale-row]')!;
   const scaleSeg = el.querySelector<HTMLElement>('[data-scale-seg]')!;
+  const docxRow = el.querySelector<HTMLElement>('[data-docx-row]')!;
+  const docxSeg = el.querySelector<HTMLElement>('[data-docx-seg]')!;
 
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
@@ -148,12 +162,15 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onScale(Number(b.dataset.scale)));
   }
+  for (const b of Array.from(docxSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onDocxMode(b.dataset.docx as 'raster' | 'reflow'));
+  }
 
   let renderedSig = '';
 
   function update(v: OptionsView): void {
-    // Panel is also relevant when only PDFs are present (op picker, no format rows).
-    if (v.rows.length === 0 && !v.showPdfOps) {
+    // Panel is also relevant for document-only inputs (PDF op picker / DOCX mode).
+    if (v.rows.length === 0 && !v.showPdfOps && !v.showDocx) {
       el.hidden = true;
       return;
     }
@@ -197,6 +214,17 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         b.setAttribute('aria-checked', String(active));
       }
       syncPill(scaleSeg);
+    }
+
+    // DOCX → PDF mode (Beta).
+    docxRow.style.display = v.showDocx ? '' : 'none';
+    if (v.showDocx) {
+      for (const b of Array.from(docxSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.docx === v.docxMode;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(docxSeg);
     }
 
     // PDF operation picker (Rotate / Split).

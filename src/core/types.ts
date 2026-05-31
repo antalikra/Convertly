@@ -21,7 +21,8 @@ export type FormatId =
   | 'ogg'
   // documents
   | 'pdf'
-  | 'txt';
+  | 'txt'
+  | 'docx';
 
 export type Category = 'image' | 'audio' | 'document';
 
@@ -49,7 +50,7 @@ export const PDF_SCALES: readonly number[] = [1, 1.5, 2];
 export const LOSSY_FORMATS: readonly FormatId[] = ['jpeg', 'webp', 'avif', 'png', 'mp3'];
 
 const AUDIO: readonly FormatId[] = ['wav', 'mp3', 'flac', 'm4a', 'aac', 'ogg'];
-const DOCUMENT: readonly FormatId[] = ['pdf'];
+const DOCUMENT: readonly FormatId[] = ['pdf', 'docx'];
 
 export function formatCategory(format: FormatId): Category {
   if (DOCUMENT.includes(format)) return 'document';
@@ -83,6 +84,7 @@ export interface ToolOptions {
   resize?: number; // 0..1 scale factor for image output; 1 = original
   rotateAngle?: number; // PDF rotate: clockwise degrees (multiple of 90)
   scale?: number; // PDF → image render scale (× base resolution)
+  docxMode?: string; // DOCX → PDF: 'raster' | 'reflow'
   operation?: string; // disambiguates tools sharing an output format (e.g. PDF rotate vs split)
   [key: string]: unknown; // room for future tool options
 }

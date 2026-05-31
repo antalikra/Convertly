@@ -79,6 +79,7 @@ describe('detectFormat (magic bytes)', () => {
     expect(await detectFormat(fileWith([], 'photo.heic'))).toBe('heic');
     expect(await detectFormat(fileWith([], 'clip.ogg'))).toBe('ogg');
     expect(await detectFormat(fileWith([], 'report.pdf'))).toBe('pdf');
+    expect(await detectFormat(fileWith([], 'resume.docx'))).toBe('docx');
     expect(await detectFormat(fileWith([], 'mystery.xyz'))).toBe('unknown');
   });
 });
@@ -466,6 +467,15 @@ describe('Controller.availableOutputFormats', () => {
     await c.updateSettings({ pdfOperation: 'totext' });
     expect(c.targetFormat('document')).toBe('txt');
     expect(c.convertibleJobs().length).toBe(1); // pdf → txt via pdf-to-text
+  });
+
+  it('treats DOCX as a document that always targets PDF', async () => {
+    const c = new Controller();
+    const docx = new File([], 'resume.docx'); // extension fallback → docx
+    await c.addFiles([docx]);
+    expect(c.categoriesPresent()).toEqual(['document']);
+    expect(c.resolveTarget(c.getState().jobs[0])).toBe('pdf');
+    expect(c.convertibleJobs().length).toBe(1); // docx → pdf via docx-to-pdf
   });
 
   it('re-marks a converted PDF pending when the operation changes', async () => {

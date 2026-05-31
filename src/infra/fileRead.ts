@@ -74,6 +74,7 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
   if (ext === 'aac') return 'aac';
   if (ext === 'ogg' || ext === 'oga') return 'ogg';
   if (ext === 'pdf') return 'pdf';
+  if (ext === 'docx') return 'docx'; // DOCX is a ZIP (PK..) container; match by extension
 
   return 'unknown';
 }

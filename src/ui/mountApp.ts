@@ -21,17 +21,18 @@ const TAB_OF_CATEGORY: Record<Category, Tab> = {
   audio: 'media',
   document: 'pdf',
 };
-const TAB_LABEL: Record<Tab, string> = { media: 'Media', pdf: 'PDF' };
+const TAB_LABEL: Record<Tab, string> = { media: 'Media', pdf: 'Documents' };
 const DROPZONE_VIEW: Record<Tab, DropzoneView> = {
   media: {
     title: 'Drop files here',
-    sub: 'Images: HEIC, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
+    sub: 'Images: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
     accept: 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.m4a,.flac',
   },
   pdf: {
-    title: 'Drop PDF files here',
-    sub: 'PDF · rotate (more PDF tools coming)',
-    accept: 'application/pdf,.pdf',
+    title: 'Drop PDF or DOCX files here',
+    sub: 'PDF · rotate / split / merge / to image / to text · DOCX → PDF (Beta)',
+    accept:
+      'application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   },
 };
 
@@ -97,7 +98,7 @@ export function mountApp(root: HTMLElement): Controller {
           <div class="seg seg--tabs" data-tabseg role="tablist" aria-label="Workspace">
             <span class="seg__pill no-anim"></span>
             <button class="seg__btn" type="button" role="tab" data-tab="media">Media</button>
-            <button class="seg__btn" type="button" role="tab" data-tab="pdf">PDF</button>
+            <button class="seg__btn" type="button" role="tab" data-tab="pdf">Documents</button>
           </div>
         </div>
         <div class="notice" data-notice hidden></div>
@@ -140,6 +141,7 @@ export function mountApp(root: HTMLElement): Controller {
     onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
     onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
+    onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
   const fileList = createFileList({
     onRemove: (id) => controller.removeJob(id),
@@ -219,6 +221,9 @@ export function mountApp(root: HTMLElement): Controller {
     noticeEl.hidden = !state.notice;
     noticeEl.textContent = state.notice ?? '';
 
+    // Lock option/tab controls while converting (changing them mid-run no-ops).
+    document.body.classList.toggle('is-busy', state.converting);
+
     // Per-tab buckets (view filter only; Convert still runs over every job).
     const tabJobs: Record<Tab, Job[]> = { media: [], pdf: [] };
     for (const job of state.jobs) tabJobs[tabOfJob(job)].push(job);
@@ -253,15 +258,16 @@ export function mountApp(root: HTMLElement): Controller {
       }));
     const selected: FormatId[] = rows.map((r) => r.selected);
     const imageRow = rows.find((r) => r.category === 'image');
+    // Distinguish real PDF inputs from DOCX (both land in the document category).
+    const hasPdfInput = state.jobs.some((j) => j.input.detectedFormat === 'pdf');
+    const hasDocxInput = state.jobs.some((j) => j.input.detectedFormat === 'docx');
     // Combine presets matter only when the active tab's target is an aggregate.
     const showCombine =
       (activeTab === 'media' && imageRow?.selected === 'pdf') ||
-      (activeTab === 'pdf' &&
-        present.includes('document') &&
-        state.settings.pdfOperation === 'merge');
+      (activeTab === 'pdf' && hasPdfInput && state.settings.pdfOperation === 'merge');
     // Quality applies to PDF → JPG; the scale seg to both PDF → image ops.
     const docOp = state.settings.pdfOperation;
-    const docActive = activeTab === 'pdf' && present.includes('document');
+    const docActive = activeTab === 'pdf' && hasPdfInput;
     const pdfJpg = docActive && docOp === 'tojpg';
     const pdfToImage = docActive && (docOp === 'tojpg' || docOp === 'topng');
     options.update({
@@ -271,14 +277,17 @@ export function mountApp(root: HTMLElement): Controller {
       resize: state.settings.resize,
       // Resize applies to raster output, not the images→PDF combine.
       showResize: imageRow != null && imageRow.selected !== 'pdf',
-      showPdfOps: activeTab === 'pdf' && present.includes('document'),
+      showPdfOps: activeTab === 'pdf' && hasPdfInput,
       pdfOperation: state.settings.pdfOperation,
-      mergeDisabled: tabJobs.pdf.length < 2, // nothing to merge with a single PDF
-
+      mergeDisabled: hasPdfInput
+        ? state.jobs.filter((j) => j.input.detectedFormat === 'pdf').length < 2
+        : true, // merge needs ≥2 actual PDFs (DOCX doesn't count)
       rotateAngle: state.settings.pdfRotateAngle,
       showCombine,
       showScale: pdfToImage,
       pdfScale: state.settings.pdfImageScale,
+      showDocx: activeTab === 'pdf' && hasDocxInput,
+      docxMode: state.settings.docxMode,
     });
 
     fileList.update(
