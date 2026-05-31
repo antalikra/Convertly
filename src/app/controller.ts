@@ -414,6 +414,24 @@ export class Controller {
     return this.registry.resolve(job.input, target, this.docOperation(job));
   }
 
+  /** Reorder: move `draggedId` to sit just before `targetId` in the job list.
+   *  The list order is the order aggregate tools (merge / images→PDF) combine
+   *  files in, so this lets the user control e.g. the merged page order. */
+  moveJob(draggedId: string, targetId: string): void {
+    if (draggedId === targetId) return;
+    const dragged = this.state.jobs.find((j) => j.input.id === draggedId);
+    const target = this.state.jobs.find((j) => j.input.id === targetId);
+    if (!dragged || !target) return;
+    // Reorder only within a category (the list is bucketed per category on screen).
+    if (inputCategory(dragged.input) !== inputCategory(target.input)) return;
+    const next = this.state.jobs.filter((j) => j.input.id !== draggedId);
+    next.splice(next.findIndex((j) => j.input.id === targetId), 0, dragged);
+    // A new order means any combined file is stale.
+    this.dropAggregates(this.categoriesOf([dragged.input]));
+    this.state = { ...this.state, jobs: next };
+    this.emit();
+  }
+
   /** Aggregate group of a job (default 1 = all-in-one). */
   groupOf(job: Job): number {
     return job.group ?? 1;

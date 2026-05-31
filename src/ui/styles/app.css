@@ -418,6 +418,20 @@ input[type="range"] {
   border-top: 1px solid var(--border-subtle);
 }
 .fileitem:first-child { border-top: none; }
+.fileitem.is-dragging { opacity: 0.45; }
+/* Drop indicator: a thick accent line on top of the row being dropped onto. */
+.fileitem.is-dragover { box-shadow: inset 0 2px 0 0 var(--accent); }
+/* Drag handle — the only draggable part of a row. */
+.fileitem__grip {
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text-tertiary);
+  border-radius: 6px;
+}
+.fileitem__grip:hover { color: var(--text-secondary); background: var(--surface-hover); }
+.fileitem__grip:active { cursor: grabbing; }
+.fileitem__grip svg { width: 18px; height: 18px; fill: currentColor; }
 .fileitem__row {
   display: flex;
   align-items: center;

@@ -73,6 +73,8 @@ export interface FileListCallbacks {
   onDownloadOutput(id: string, index: number): void;
   onGroup(id: string, group: number): void;
   onNewGroup(id: string): void;
+  /** Drag-reorder: move `draggedId` to just before `targetId`. */
+  onReorder(draggedId: string, targetId: string): void;
 }
 
 interface RowHandle {
@@ -185,10 +187,40 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
 
   const el = document.createElement('div');
   el.className = 'fileitem fileitem--enter';
+  el.dataset.id = id;
+  // Drop target. Order matters for merge / images→PDF; the controller restricts a
+  // move to the same category. Dragging is initiated only from the grip handle
+  // (below) so it doesn't fight the row's dropdowns/buttons.
+  el.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    el.classList.add('is-dragover');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('is-dragover'));
+  el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    el.classList.remove('is-dragover');
+    const draggedId = e.dataTransfer?.getData('text/plain');
+    if (draggedId && draggedId !== id) cb.onReorder(draggedId, id);
+  });
 
   // The main flex line; a multi-output (split) job adds an expandable sublist below.
   const row = document.createElement('div');
   row.className = 'fileitem__row';
+
+  // Drag handle (the only draggable part — keeps row controls clickable).
+  const grip = document.createElement('span');
+  grip.className = 'fileitem__grip';
+  grip.draggable = true;
+  grip.title = 'Drag to reorder';
+  grip.setAttribute('aria-label', 'Drag to reorder');
+  grip.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+  grip.addEventListener('dragstart', (e) => {
+    e.dataTransfer?.setData('text/plain', id);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('is-dragging');
+  });
+  grip.addEventListener('dragend', () => el.classList.remove('is-dragging'));
 
   const bubble = document.createElement('span');
   bubble.className = `fbubble fbubble--${bubbleKind(view.job.input)}`;
@@ -243,7 +275,7 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   rm.addEventListener('click', () => cb.onRemove(id));
   actions.append(expand, dl, rm);
 
-  row.append(bubble, info, convert, status, actions);
+  row.append(grip, bubble, info, convert, status, actions);
 
   // Per-file list for split output (built lazily; rebuilt when the count changes).
   const sublist = document.createElement('div');

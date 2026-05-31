@@ -159,6 +159,7 @@ export function mountApp(root: HTMLElement): Controller {
     onDownloadOutput: (id, index) => controller.downloadOutput(id, index),
     onGroup: (id, group) => controller.setJobGroup(id, group),
     onNewGroup: (id) => controller.addJobToNewGroup(id),
+    onReorder: (draggedId, targetId) => controller.moveJob(draggedId, targetId),
   });
   const resultPanel = createResultPanel((id) => controller.downloadAggregate(id));
 
