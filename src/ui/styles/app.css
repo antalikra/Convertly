@@ -449,8 +449,8 @@ body.is-reordering { cursor: grabbing; user-select: none; }
   animation: dragJiggle 320ms ease-in-out infinite;
 }
 @keyframes dragJiggle {
-  0%, 100% { transform: scale(1.03) rotate(-0.7deg); }
-  50% { transform: scale(1.03) rotate(0.7deg); }
+  0%, 100% { transform: scale(1.02) rotate(-0.25deg); }
+  50% { transform: scale(1.02) rotate(0.25deg); }
 }
 .fileitem__row {
   display: flex;
