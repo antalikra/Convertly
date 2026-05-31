@@ -85,18 +85,18 @@ function computePageBreaks(host: HTMLElement, maxPageH: number): number[] {
 }
 
 /** Data-URI images report height only once decoded — wait so block measurement
- *  (and thus page breaks) see their real laid-out size. */
+ *  (and thus page breaks) see their real laid-out size. Uses `img.decode()`,
+ *  which ALWAYS settles (resolves when decoded, rejects on failure); a `load`
+ *  listener could hang forever on an image that is already `complete` (the event
+ *  never fires again). A per-image timeout is a final safety net. */
 async function awaitImages(host: HTMLElement): Promise<void> {
   const imgs = Array.from(host.querySelectorAll('img'));
   await Promise.all(
-    imgs.map((img) =>
-      img.complete && img.naturalHeight > 0
-        ? Promise.resolve()
-        : new Promise<void>((res) => {
-            img.addEventListener('load', () => res(), { once: true });
-            img.addEventListener('error', () => res(), { once: true });
-          }),
-    ),
+    imgs.map((img) => {
+      const decoded = img.decode().catch(() => undefined);
+      const timeout = new Promise<void>((res) => setTimeout(res, 3000));
+      return Promise.race([decoded, timeout]);
+    }),
   );
 }
 
@@ -127,30 +127,60 @@ export async function docxToPdfRaster(file: File): Promise<Uint8Array> {
     const breaks = computePageBreaks(host, pageCssH);
     const doc = await PDFDocument.create();
 
-    // One html2canvas crop per page (a single full-document canvas overflows the
-    // browser's max-canvas-size limit and comes back blank). Pages stay A4-sized;
-    // the slice is top-aligned with white below.
-    let prev = 0;
+    const SCALE = 2; // render resolution (≈ retina)
+    // Each band's canvas must stay under the browser's max canvas size (~16384px);
+    // whole pages are grouped into a band up to this CSS height.
+    const MAX_BAND_CSS = Math.floor(15000 / SCALE);
+
+    // Page ranges [top, bottom] in CSS px (a single full-document canvas would
+    // overflow the max canvas size and come back blank).
+    const pages: Array<{ top: number; bottom: number }> = [];
+    let top = 0;
     for (const br of breaks) {
-      const h = Math.max(1, Math.round(br - prev));
-      const canvas = await html2canvas(host, {
+      pages.push({ top, bottom: br });
+      top = br;
+    }
+
+    // Render in BANDS — one html2canvas per band (several pages), NOT one per
+    // page. Per-page rendering re-walked the whole DOM every time
+    // (O(pages × docSize)) and made big documents crawl / appear to hang. Each
+    // band is then sliced into A4 pages with a cheap 2D draw (no re-render).
+    let i = 0;
+    while (i < pages.length) {
+      const bandTop = pages[i].top;
+      let j = i;
+      while (j + 1 < pages.length && pages[j + 1].bottom - bandTop <= MAX_BAND_CSS) j++;
+      const bandH = Math.max(1, Math.round(pages[j].bottom - bandTop));
+
+      const band = await html2canvas(host, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: SCALE,
         logging: false,
         width: A4_PX_W,
-        height: h,
-        y: prev,
+        height: bandH,
+        y: bandTop,
         windowWidth: A4_PX_W,
-        windowHeight: h,
+        windowHeight: bandH,
       });
-      const blob: Blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b as Blob), 'image/jpeg', 0.85),
-      );
-      const img = await doc.embedJpg(new Uint8Array(await blob.arrayBuffer()));
-      const imgH = Math.min(A4_PT_H, A4_PT_W * (canvas.height / canvas.width));
-      const page = doc.addPage([A4_PT_W, A4_PT_H]);
-      page.drawImage(img, { x: 0, y: A4_PT_H - imgH, width: A4_PT_W, height: imgH });
-      prev = br;
+
+      for (let k = i; k <= j; k++) {
+        const pageH = Math.max(1, Math.round(pages[k].bottom - pages[k].top));
+        const sy = Math.round((pages[k].top - bandTop) * SCALE);
+        const sh = Math.max(1, Math.min(band.height - sy, Math.round(pageH * SCALE)));
+        const sw = band.width;
+        const slice = document.createElement('canvas');
+        slice.width = sw;
+        slice.height = sh;
+        slice.getContext('2d')!.drawImage(band, 0, sy, sw, sh, 0, 0, sw, sh);
+        const blob: Blob = await new Promise((resolve) =>
+          slice.toBlob((b) => resolve(b as Blob), 'image/jpeg', 0.85),
+        );
+        const img = await doc.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+        const imgH = Math.min(A4_PT_H, A4_PT_W * (sh / sw));
+        const page = doc.addPage([A4_PT_W, A4_PT_H]);
+        page.drawImage(img, { x: 0, y: A4_PT_H - imgH, width: A4_PT_W, height: imgH });
+      }
+      i = j + 1;
     }
     return doc.save();
   } finally {

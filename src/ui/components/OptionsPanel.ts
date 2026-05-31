@@ -41,8 +41,11 @@ export interface OptionsView {
   /** Render-scale seg — shown for PDF → image operations. */
   showScale: boolean;
   pdfScale: number;
-  /** DOCX → PDF mode seg (Beta) — shown when a DOCX input is present. */
-  showDocx: boolean;
+  /** DOCX operation picker (To PDF / To text / To HTML) — shown when a DOCX input is present. */
+  showDocxOps: boolean;
+  docxOperation: string; // 'topdf' | 'totext' | 'tohtml'
+  /** DOCX → PDF mode seg (Beta) — shown only when the DOCX operation is 'topdf'. */
+  showDocxMode: boolean;
   docxMode: string; // 'raster' | 'reflow'
 }
 
@@ -54,6 +57,7 @@ export interface OptionsHandlers {
   onRotate(angle: number): void;
   onCombine(mode: 'one' | 'separate'): void;
   onScale(scale: number): void;
+  onDocxOperation(operation: string): void;
   onDocxMode(mode: 'raster' | 'reflow'): void;
 }
 
@@ -91,7 +95,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="seg__btn" role="radio" data-op="todocx">To DOCX</button>
       </div>
     </div>
-    <div class="group__row" data-pdfop-hint-row hidden>
+    <div class="group__row" data-pdfop-hint-row style="display:none">
       <span class="group__label">To DOCX <span class="badge badge--accent badge--beta">Beta</span></span>
       <span class="group__hint">Text only — tables, images and layout aren't kept.</span>
     </div>
@@ -122,6 +126,15 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         ).join('')}
       </div>
     </div>
+    <div class="group__row" data-docxop-row>
+      <span class="group__label">DOCX</span>
+      <div class="seg" data-docxop-seg role="radiogroup" aria-label="DOCX operation">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-docxop="topdf">To PDF</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="totext">To text</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="tohtml">To HTML</button>
+      </div>
+    </div>
     <div class="group__row" data-docx-row>
       <span class="group__label">DOCX → PDF <span class="badge badge--accent badge--beta">Beta</span></span>
       <div class="seg" data-docx-seg role="radiogroup" aria-label="DOCX to PDF mode">
@@ -147,6 +160,8 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
   const scaleRow = el.querySelector<HTMLElement>('[data-scale-row]')!;
   const scaleSeg = el.querySelector<HTMLElement>('[data-scale-seg]')!;
+  const docxopRow = el.querySelector<HTMLElement>('[data-docxop-row]')!;
+  const docxopSeg = el.querySelector<HTMLElement>('[data-docxop-seg]')!;
   const docxRow = el.querySelector<HTMLElement>('[data-docx-row]')!;
   const docxSeg = el.querySelector<HTMLElement>('[data-docx-seg]')!;
 
@@ -168,6 +183,9 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onScale(Number(b.dataset.scale)));
   }
+  for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onDocxOperation(String(b.dataset.docxop)));
+  }
   for (const b of Array.from(docxSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onDocxMode(b.dataset.docx as 'raster' | 'reflow'));
   }
@@ -176,7 +194,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
 
   function update(v: OptionsView): void {
     // Panel is also relevant for document-only inputs (PDF op picker / DOCX mode).
-    if (v.rows.length === 0 && !v.showPdfOps && !v.showDocx) {
+    if (v.rows.length === 0 && !v.showPdfOps && !v.showDocxOps) {
       el.hidden = true;
       return;
     }
@@ -222,9 +240,20 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       syncPill(scaleSeg);
     }
 
-    // DOCX → PDF mode (Beta).
-    docxRow.style.display = v.showDocx ? '' : 'none';
-    if (v.showDocx) {
+    // DOCX operation picker (To PDF / To text / To HTML).
+    docxopRow.style.display = v.showDocxOps ? '' : 'none';
+    if (v.showDocxOps) {
+      for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.docxop === v.docxOperation;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(docxopSeg);
+    }
+
+    // DOCX → PDF mode (Beta) — only relevant when the DOCX target is PDF.
+    docxRow.style.display = v.showDocxMode ? '' : 'none';
+    if (v.showDocxMode) {
       for (const b of Array.from(docxSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
         const active = b.dataset.docx === v.docxMode;
         b.classList.toggle('seg__btn--active', active);

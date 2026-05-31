@@ -22,6 +22,7 @@ export type FormatId =
   // documents
   | 'pdf'
   | 'txt'
+  | 'html'
   | 'docx';
 
 export type Category = 'image' | 'audio' | 'document';

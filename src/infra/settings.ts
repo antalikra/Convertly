@@ -12,6 +12,9 @@ export type PdfOperation =
   | 'totext'
   | 'todocx';
 
+/** Operation chosen for DOCX inputs (the document card's DOCX picker). */
+export type DocxOperation = 'topdf' | 'totext' | 'tohtml';
+
 /** DOCX → PDF rendering mode (Beta). raster = visual fidelity; reflow = selectable text. */
 export type DocxMode = 'raster' | 'reflow';
 
@@ -29,6 +32,8 @@ export interface Settings {
   pdfRotateAngle: number;
   /** Render scale for PDF → image (1 = 72dpi-ish, 2 ≈ retina). Bigger = sharper + heavier. */
   pdfImageScale: number;
+  /** Operation applied to DOCX inputs (→ PDF / text / HTML). */
+  docxOperation: DocxOperation;
   /** DOCX → PDF mode (Beta). */
   docxMode: DocxMode;
   theme: ThemeMode;
@@ -42,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,
+  docxOperation: 'topdf',
   docxMode: 'raster',
   theme: 'dark',
 };

@@ -2,9 +2,11 @@
 // in our setup. Kept loose on purpose — these are best-effort Beta pipelines.
 
 declare module 'mammoth/mammoth.browser.js' {
-  // mammoth's self-contained browser bundle (UMD). Only convertToHtml is used.
+  // mammoth's self-contained browser bundle (UMD). We use convertToHtml (→ HTML /
+  // DOCX→PDF) and extractRawText (→ plain text).
   const mammoth: {
     convertToHtml(input: { arrayBuffer: ArrayBuffer }): Promise<{ value: string; messages: unknown[] }>;
+    extractRawText(input: { arrayBuffer: ArrayBuffer }): Promise<{ value: string; messages: unknown[] }>;
   };
   export default mammoth;
 }

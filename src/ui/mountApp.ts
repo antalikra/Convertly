@@ -147,6 +147,8 @@ export function mountApp(root: HTMLElement): Controller {
     onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
     onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
+    onDocxOperation: (op) =>
+      void controller.updateSettings({ docxOperation: op as 'topdf' | 'totext' | 'tohtml' }),
     onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
   const fileList = createFileList({
@@ -297,7 +299,10 @@ export function mountApp(root: HTMLElement): Controller {
       showCombine,
       showScale: pdfToImage,
       pdfScale: state.settings.pdfImageScale,
-      showDocx: activeTab === 'pdf' && hasDocxInput,
+      showDocxOps: activeTab === 'pdf' && hasDocxInput,
+      docxOperation: state.settings.docxOperation,
+      showDocxMode:
+        activeTab === 'pdf' && hasDocxInput && state.settings.docxOperation === 'topdf',
       docxMode: state.settings.docxMode,
     });
 

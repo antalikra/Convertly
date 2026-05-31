@@ -199,8 +199,14 @@ export class Controller {
   resolveTarget(job: Job): FormatId | null {
     const c = inputCategory(job.input);
     if (!c) return null;
-    // DOCX only goes to PDF (the PDF op picker is for PDF inputs, not DOCX).
-    if (job.input.detectedFormat === 'docx') return 'pdf';
+    // DOCX has its own operation picker (→ PDF / text / HTML), separate from the
+    // PDF op picker.
+    if (job.input.detectedFormat === 'docx') {
+      const op = this.state.settings.docxOperation;
+      if (op === 'totext') return 'txt';
+      if (op === 'tohtml') return 'html';
+      return 'pdf';
+    }
     return job.targetFormat ?? this.targetFormat(c);
   }
 
@@ -278,7 +284,8 @@ export class Controller {
       (patch.pdfOperation !== undefined && patch.pdfOperation !== prev.pdfOperation) ||
       (patch.pdfRotateAngle !== undefined && patch.pdfRotateAngle !== prev.pdfRotateAngle) ||
       (patch.pdfImageScale !== undefined && patch.pdfImageScale !== prev.pdfImageScale) ||
-      (patch.docxMode !== undefined && patch.docxMode !== prev.docxMode);
+      (patch.docxMode !== undefined && patch.docxMode !== prev.docxMode) ||
+      (patch.docxOperation !== undefined && patch.docxOperation !== prev.docxOperation);
     if (pdfChanged) {
       jobs = jobs.map((j) =>
         inputCategory(j.input) === 'document' && (j.outputs?.length || j.error)
