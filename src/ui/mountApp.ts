@@ -151,6 +151,11 @@ export function mountApp(root: HTMLElement): Controller {
       void controller.updateSettings({ docxOperation: op as 'topdf' | 'totext' | 'tohtml' }),
     onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
     onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
+    onPdfPageSize: (size) =>
+      void controller.updateSettings({ pdfPageSize: size as 'fit' | 'a4' | 'letter' }),
+    onPdfOrientation: (o) =>
+      void controller.updateSettings({ pdfOrientation: o as 'auto' | 'portrait' | 'landscape' }),
+    onPdfMargin: (pdfMargin) => void controller.updateSettings({ pdfMargin }),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
     onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
@@ -285,8 +290,8 @@ export function mountApp(root: HTMLElement): Controller {
     const anyPdfOp = (op: string) => onDocsTab && pdfJobs.some((j) => controller.docOperation(j) === op);
     const anyDocxOp = (op: string) => onDocsTab && docxJobs.some((j) => controller.docOperation(j) === op);
     // Combine presets matter only when the active tab's target is an aggregate.
-    const showCombine =
-      (activeTab === 'media' && imageRow?.selected === 'pdf') || anyPdfOp('merge');
+    const imagesToPdf = activeTab === 'media' && imageRow?.selected === 'pdf';
+    const showCombine = imagesToPdf || anyPdfOp('merge');
     options.update({
       rows,
       quality: state.settings.quality,
@@ -305,6 +310,10 @@ export function mountApp(root: HTMLElement): Controller {
       showRotate: anyPdfOp('rotate'),
       rotateAngle: state.settings.pdfRotateAngle,
       showCombine,
+      showImagesToPdf: imagesToPdf,
+      pdfPageSize: state.settings.pdfPageSize,
+      pdfOrientation: state.settings.pdfOrientation,
+      pdfMargin: state.settings.pdfMargin,
       showScale: anyPdfOp('tojpg') || anyPdfOp('topng') || anyPdfOp('compress'),
       pdfScale: state.settings.pdfImageScale,
       showDocxMode: anyDocxOp('topdf'),

@@ -5,6 +5,10 @@ export type ThemeMode = 'dark' | 'light';
 /** Image resize mode. percent = scale by the slider; maxside = cap longest side. */
 export type ResizeMode = 'percent' | 'maxside';
 
+/** images → PDF page sizing. fit = page equals each image; else fixed A4/Letter. */
+export type PdfPageSize = 'fit' | 'a4' | 'letter';
+export type PdfOrientation = 'auto' | 'portrait' | 'landscape';
+
 /** Operation chosen for PDF inputs (the document card's picker). */
 export type PdfOperation =
   | 'rotate'
@@ -33,6 +37,10 @@ export interface Settings {
   resizeMode: ResizeMode;
   /** Longest-side cap (px) used in 'maxside' mode. */
   resizeMaxPx: number;
+  /** images → PDF: page size, orientation, and margin (pt). */
+  pdfPageSize: PdfPageSize;
+  pdfOrientation: PdfOrientation;
+  pdfMargin: number;
   /** Operation applied to PDF inputs. */
   pdfOperation: PdfOperation;
   /** Clockwise rotation for the PDF rotate operation (degrees, multiple of 90). */
@@ -53,6 +61,9 @@ export const DEFAULT_SETTINGS: Settings = {
   resize: 1,
   resizeMode: 'percent',
   resizeMaxPx: 1920,
+  pdfPageSize: 'fit',
+  pdfOrientation: 'auto',
+  pdfMargin: 0,
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,

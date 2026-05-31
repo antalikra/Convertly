@@ -45,6 +45,11 @@ export interface OptionsView {
   rotateAngle: number;
   /** Combine presets (All in one / Each separate) — shown for aggregate targets. */
   showCombine: boolean;
+  /** images → PDF page controls — shown when the image target is PDF. */
+  showImagesToPdf: boolean;
+  pdfPageSize: string; // 'fit' | 'a4' | 'letter'
+  pdfOrientation: string; // 'auto' | 'portrait' | 'landscape'
+  pdfMargin: number;
   /** Render-scale seg — shown when a document is set to To JPG / To PNG. */
   showScale: boolean;
   pdfScale: number;
@@ -66,6 +71,9 @@ export interface OptionsHandlers {
   onDocxOperation(operation: string): void;
   onRotate(angle: number): void;
   onCombine(mode: 'one' | 'separate'): void;
+  onPdfPageSize(size: string): void;
+  onPdfOrientation(orientation: string): void;
+  onPdfMargin(margin: number): void;
   onScale(scale: number): void;
   onDocxMode(mode: 'raster' | 'reflow'): void;
 }
@@ -143,6 +151,33 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="btn btn--sm" data-combine="separate">Each separate</button>
       </div>
     </div>
+    <div class="group__row" data-pdfpage-row>
+      <span class="group__label">Page</span>
+      <div class="seg" data-pdfpage-seg role="radiogroup" aria-label="PDF page size">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-pdfpage="fit">Fit</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfpage="a4">A4</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfpage="letter">Letter</button>
+      </div>
+    </div>
+    <div class="group__row" data-pdforient-row>
+      <span class="group__label">Orientation</span>
+      <div class="seg" data-pdforient-seg role="radiogroup" aria-label="PDF orientation">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="auto">Auto</button>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="portrait">Portrait</button>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="landscape">Landscape</button>
+      </div>
+    </div>
+    <div class="group__row" data-pdfmargin-row>
+      <span class="group__label">Margin</span>
+      <div class="seg" data-pdfmargin-seg role="radiogroup" aria-label="PDF margin">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="0">None</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="24">Small</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="48">Large</button>
+      </div>
+    </div>
     <div class="group__row" data-scale-row>
       <span class="group__label">Resolution</span>
       <div class="seg" data-scale-seg role="radiogroup" aria-label="PDF render scale">
@@ -189,6 +224,12 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
   const pdfopHintRow = el.querySelector<HTMLElement>('[data-pdfop-hint-row]')!;
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
+  const pdfpageRow = el.querySelector<HTMLElement>('[data-pdfpage-row]')!;
+  const pdfpageSeg = el.querySelector<HTMLElement>('[data-pdfpage-seg]')!;
+  const pdforientRow = el.querySelector<HTMLElement>('[data-pdforient-row]')!;
+  const pdforientSeg = el.querySelector<HTMLElement>('[data-pdforient-seg]')!;
+  const pdfmarginRow = el.querySelector<HTMLElement>('[data-pdfmargin-row]')!;
+  const pdfmarginSeg = el.querySelector<HTMLElement>('[data-pdfmargin-seg]')!;
   const scaleRow = el.querySelector<HTMLElement>('[data-scale-row]')!;
   const scaleSeg = el.querySelector<HTMLElement>('[data-scale-seg]')!;
   const docxopRow = el.querySelector<HTMLElement>('[data-docxop-row]')!;
@@ -218,6 +259,15 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   }
   for (const b of Array.from(combineRow.querySelectorAll<HTMLButtonElement>('[data-combine]'))) {
     b.addEventListener('click', () => h.onCombine(b.dataset.combine as 'one' | 'separate'));
+  }
+  for (const b of Array.from(pdfpageSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onPdfPageSize(String(b.dataset.pdfpage)));
+  }
+  for (const b of Array.from(pdforientSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onPdfOrientation(String(b.dataset.pdforient)));
+  }
+  for (const b of Array.from(pdfmarginSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onPdfMargin(Number(b.dataset.pdfmargin)));
   }
   for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onScale(Number(b.dataset.scale)));
@@ -324,6 +374,34 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     }
 
     combineRow.style.display = v.showCombine ? '' : 'none';
+
+    // images → PDF: page size, then (for a fixed page) orientation + margin.
+    pdfpageRow.style.display = v.showImagesToPdf ? '' : 'none';
+    if (v.showImagesToPdf) {
+      for (const b of Array.from(pdfpageSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.pdfpage === v.pdfPageSize;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(pdfpageSeg);
+    }
+    const fixedPage = v.showImagesToPdf && v.pdfPageSize !== 'fit';
+    pdforientRow.style.display = fixedPage ? '' : 'none';
+    pdfmarginRow.style.display = fixedPage ? '' : 'none';
+    if (fixedPage) {
+      for (const b of Array.from(pdforientSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.pdforient === v.pdfOrientation;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(pdforientSeg);
+      for (const b of Array.from(pdfmarginSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = Number(b.dataset.pdfmargin) === v.pdfMargin;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(pdfmarginSeg);
+    }
 
     // PDF → image render scale.
     scaleRow.style.display = v.showScale ? '' : 'none';

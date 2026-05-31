@@ -11,6 +11,27 @@ const IMAGE_INPUTS: FormatId[] = [
 // so transparency is composited onto white first.
 const EMBED_QUALITY = 0.9;
 
+const PAGE_PT: Record<string, [number, number]> = {
+  a4: [595.28, 841.89],
+  letter: [612, 792],
+};
+
+/** Page size (pt) for a fixed-page layout, oriented for the image; null = "fit"
+ *  (page equals the image's pixel size, the original behaviour). */
+function pageDims(
+  size: string | undefined,
+  orientation: string | undefined,
+  imgW: number,
+  imgH: number,
+): [number, number] | null {
+  const base = size && PAGE_PT[size];
+  if (!base) return null;
+  let [w, h] = base;
+  const landscape = orientation === 'landscape' || (orientation !== 'portrait' && imgW > imgH);
+  if (landscape) [w, h] = [h, w];
+  return [w, h];
+}
+
 /**
  * Combine images into one PDF, one image per page (N→1, aggregate). Each image is
  * decoded to an ImageBitmap (HEIC/TIFF via their decoders, others native),
@@ -26,9 +47,10 @@ export const imagesToPdfTool: Tool = {
   outputFormats: ['pdf'],
   accepts: (i) => IMAGE_INPUTS.includes(i.detectedFormat as FormatId),
 
-  async run(inputs, _options, onProgress) {
+  async run(inputs, options, onProgress) {
     if (inputs.length === 0) return [];
     const { PDFDocument } = await import('pdf-lib');
+    const margin = typeof options.pdfMargin === 'number' ? Math.max(0, options.pdfMargin) : 0;
 
     try {
       const doc = await PDFDocument.create();
@@ -48,8 +70,22 @@ export const imagesToPdfTool: Tool = {
           onProgress?.({ inputId: input.id, stage: 'encoding' });
           const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: EMBED_QUALITY });
           const img = await doc.embedJpg(new Uint8Array(await blob.arrayBuffer()));
-          const page = doc.addPage([img.width, img.height]);
-          page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+          const dims = pageDims(options.pdfPageSize, options.pdfOrientation, img.width, img.height);
+          if (!dims) {
+            // "Fit": page equals the image's pixel size.
+            const page = doc.addPage([img.width, img.height]);
+            page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+          } else {
+            // Fixed page (A4/Letter): scale the image to fit inside the margins, centred.
+            const [pw, ph] = dims;
+            const availW = Math.max(1, pw - 2 * margin);
+            const availH = Math.max(1, ph - 2 * margin);
+            const scale = Math.min(availW / img.width, availH / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const page = doc.addPage([pw, ph]);
+            page.drawImage(img, { x: (pw - dw) / 2, y: (ph - dh) / 2, width: dw, height: dh });
+          }
         } finally {
           bitmap?.close();
         }

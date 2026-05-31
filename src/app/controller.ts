@@ -407,6 +407,9 @@ export class Controller {
       rotateAngle: this.state.settings.pdfRotateAngle,
       scale: this.state.settings.pdfImageScale,
       docxMode: this.state.settings.docxMode,
+      pdfPageSize: this.state.settings.pdfPageSize,
+      pdfOrientation: this.state.settings.pdfOrientation,
+      pdfMargin: this.state.settings.pdfMargin,
     };
   }
 

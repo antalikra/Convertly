@@ -91,6 +91,9 @@ export interface ToolOptions {
   rotateAngle?: number; // PDF rotate: clockwise degrees (multiple of 90)
   scale?: number; // PDF → image render scale (× base resolution)
   docxMode?: string; // DOCX → PDF: 'raster' | 'reflow'
+  pdfPageSize?: string; // images → PDF: 'fit' | 'a4' | 'letter'
+  pdfOrientation?: string; // images → PDF: 'auto' | 'portrait' | 'landscape'
+  pdfMargin?: number; // images → PDF: page margin in pt
   operation?: string; // disambiguates tools sharing an output format (e.g. PDF rotate vs split)
   [key: string]: unknown; // room for future tool options
 }
