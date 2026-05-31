@@ -23,9 +23,13 @@ async function decodeSvg(file: InputFile): Promise<ImageBitmap> {
       w = vb ? Math.ceil(Number(vb[1])) : 1024;
       h = vb ? Math.ceil(Number(vb[2])) : 1024;
     }
+    // Vectors render crisply at any size — supersample small SVGs to ~2048px on
+    // the longest side (capped at 4096) so the raster isn't blurry/tiny.
+    const longest = Math.max(w, h) || 1;
+    const scale = Math.min(4096, Math.max(longest, 2048)) / longest;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, w);
-    canvas.height = Math.max(1, h);
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Could not get 2D canvas context');
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);

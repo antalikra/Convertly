@@ -39,6 +39,11 @@ export async function encodeBlob(
   if (!ctx) {
     throw new Error('Could not get 2D canvas context');
   }
+  // JPEG has no alpha — flatten transparency onto white (else it turns black).
+  if (format === 'jpeg') {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+  }
   ctx.drawImage(bitmap, 0, 0, w, h);
 
   // Native canvas encoders.
