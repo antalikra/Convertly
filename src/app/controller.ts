@@ -416,6 +416,11 @@ export class Controller {
       stampText: this.state.settings.stampText,
       stampPosition: this.state.settings.stampPosition,
       stampPageNumbers: this.state.settings.stampPageNumbers,
+      trimStart: this.state.settings.audioTrimStart,
+      trimEnd: this.state.settings.audioTrimEnd,
+      audioMono: this.state.settings.audioMono,
+      normalize: this.state.settings.audioNormalize,
+      audioBitrate: this.state.settings.audioBitrate,
     };
   }
 

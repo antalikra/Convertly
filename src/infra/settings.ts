@@ -31,6 +31,13 @@ export interface Settings {
   imageFormat: FormatId;
   /** Target format for audio inputs. */
   audioFormat: FormatId;
+  /** Audio edits: trim (seconds; end 0 = until the end), mono mix, normalize. */
+  audioTrimStart: number;
+  audioTrimEnd: number;
+  audioMono: boolean;
+  audioNormalize: boolean;
+  /** MP3 output bitrate (kbps). */
+  audioBitrate: number;
   quality: number; // 0..1
   /** Scale factor for image output (0.25..1); 1 = original size (percent mode). */
   resize: number;
@@ -64,6 +71,11 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   imageFormat: 'jpeg',
   audioFormat: 'mp3',
+  audioTrimStart: 0,
+  audioTrimEnd: 0,
+  audioMono: false,
+  audioNormalize: false,
+  audioBitrate: 192,
   quality: 1, // max quality by default (png = lossless)
   resize: 1,
   resizeMode: 'percent',

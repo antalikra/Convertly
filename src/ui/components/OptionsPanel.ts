@@ -32,6 +32,15 @@ export interface OptionsView {
   showResize: boolean;
   resizeMode: string; // 'percent' | 'maxside'
   resizeMaxPx: number;
+  /** Audio edit controls — shown when an audio input is present. */
+  showAudio: boolean;
+  trimStart: number;
+  trimEnd: number;
+  audioMono: boolean;
+  audioNormalize: boolean;
+  /** MP3 bitrate seg — shown when the audio target is MP3. */
+  showAudioBitrate: boolean;
+  audioBitrate: number;
   /** Global PDF operation preset (applies to all PDFs without a per-file override). */
   showPdfOps: boolean;
   pdfOperation: string;
@@ -74,6 +83,11 @@ export interface OptionsHandlers {
   onResize(resize: number): void;
   onResizeMode(mode: string): void;
   onResizeMax(px: number): void;
+  onTrimStart(seconds: number): void;
+  onTrimEnd(seconds: number): void;
+  onAudioMono(mono: boolean): void;
+  onAudioNormalize(on: boolean): void;
+  onAudioBitrate(kbps: number): void;
   /** Global PDF / DOCX operation presets (apply to all files of that kind). */
   onOperation(operation: string): void;
   onDocxOperation(operation: string): void;
@@ -127,6 +141,40 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
           (px) =>
             `<button type="button" class="seg__btn" role="radio" data-resizemax="${px}">${px}</button>`,
         ).join('')}
+      </div>
+    </div>
+    <div class="group__row" data-audiotrim-row style="display:none">
+      <span class="group__label">Trim (s)</span>
+      <div class="trim">
+        <input type="number" class="opt-input opt-input--num" data-trimstart min="0" step="0.1" placeholder="start" aria-label="Trim start seconds" />
+        <span class="trim__dash">–</span>
+        <input type="number" class="opt-input opt-input--num" data-trimend min="0" step="0.1" placeholder="end" aria-label="Trim end seconds" />
+      </div>
+    </div>
+    <div class="group__row" data-audioch-row style="display:none">
+      <span class="group__label">Channels</span>
+      <div class="seg" data-audioch-seg role="radiogroup" aria-label="Channels">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-audioch="stereo">Stereo</button>
+        <button type="button" class="seg__btn" role="radio" data-audioch="mono">Mono</button>
+      </div>
+    </div>
+    <div class="group__row" data-audionorm-row style="display:none">
+      <span class="group__label">Normalize</span>
+      <div class="seg" data-audionorm-seg role="radiogroup" aria-label="Normalize">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-audionorm="off">Off</button>
+        <button type="button" class="seg__btn" role="radio" data-audionorm="on">On</button>
+      </div>
+    </div>
+    <div class="group__row" data-audiobitrate-row style="display:none">
+      <span class="group__label">Bitrate</span>
+      <div class="seg" data-audiobitrate-seg role="radiogroup" aria-label="MP3 bitrate">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-audiobitrate="128">128</button>
+        <button type="button" class="seg__btn" role="radio" data-audiobitrate="192">192</button>
+        <button type="button" class="seg__btn" role="radio" data-audiobitrate="256">256</button>
+        <button type="button" class="seg__btn" role="radio" data-audiobitrate="320">320</button>
       </div>
     </div>
     <div class="group__row" data-pdfop-row>
@@ -257,6 +305,15 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const resizemaxSeg = el.querySelector<HTMLElement>('[data-resizemax-seg]')!;
   const rotateRow = el.querySelector<HTMLElement>('[data-rotate-row]')!;
   const rotateSeg = el.querySelector<HTMLElement>('[data-rotate-seg]')!;
+  const audiotrimRow = el.querySelector<HTMLElement>('[data-audiotrim-row]')!;
+  const trimStart = el.querySelector<HTMLInputElement>('[data-trimstart]')!;
+  const trimEnd = el.querySelector<HTMLInputElement>('[data-trimend]')!;
+  const audiochRow = el.querySelector<HTMLElement>('[data-audioch-row]')!;
+  const audiochSeg = el.querySelector<HTMLElement>('[data-audioch-seg]')!;
+  const audionormRow = el.querySelector<HTMLElement>('[data-audionorm-row]')!;
+  const audionormSeg = el.querySelector<HTMLElement>('[data-audionorm-seg]')!;
+  const audiobitrateRow = el.querySelector<HTMLElement>('[data-audiobitrate-row]')!;
+  const audiobitrateSeg = el.querySelector<HTMLElement>('[data-audiobitrate-seg]')!;
   const pdfopRow = el.querySelector<HTMLElement>('[data-pdfop-row]')!;
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
   const pagerangeRow = el.querySelector<HTMLElement>('[data-pagerange-row]')!;
@@ -285,6 +342,17 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
   pagerangeInput.addEventListener('input', () => h.onPageRange(pagerangeInput.value));
+  trimStart.addEventListener('input', () => h.onTrimStart(Number(trimStart.value) || 0));
+  trimEnd.addEventListener('input', () => h.onTrimEnd(Number(trimEnd.value) || 0));
+  for (const b of Array.from(audiochSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onAudioMono(b.dataset.audioch === 'mono'));
+  }
+  for (const b of Array.from(audionormSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onAudioNormalize(b.dataset.audionorm === 'on'));
+  }
+  for (const b of Array.from(audiobitrateSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onAudioBitrate(Number(b.dataset.audiobitrate)));
+  }
   stampInput.addEventListener('input', () => h.onStampText(stampInput.value));
   for (const b of Array.from(stampposSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onStampPosition(String(b.dataset.stamppos)));
@@ -397,6 +465,36 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         b.setAttribute('aria-checked', String(active));
       }
       syncPill(resizemaxSeg);
+    }
+
+    // Audio edits: trim / channels / normalize, plus MP3 bitrate.
+    audiotrimRow.style.display = v.showAudio ? '' : 'none';
+    audiochRow.style.display = v.showAudio ? '' : 'none';
+    audionormRow.style.display = v.showAudio ? '' : 'none';
+    if (v.showAudio) {
+      if (document.activeElement !== trimStart) trimStart.value = v.trimStart ? String(v.trimStart) : '';
+      if (document.activeElement !== trimEnd) trimEnd.value = v.trimEnd ? String(v.trimEnd) : '';
+      for (const b of Array.from(audiochSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = (b.dataset.audioch === 'mono') === v.audioMono;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(audiochSeg);
+      for (const b of Array.from(audionormSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = (b.dataset.audionorm === 'on') === v.audioNormalize;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(audionormSeg);
+    }
+    audiobitrateRow.style.display = v.showAudioBitrate ? '' : 'none';
+    if (v.showAudioBitrate) {
+      for (const b of Array.from(audiobitrateSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = Number(b.dataset.audiobitrate) === v.audioBitrate;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(audiobitrateSeg);
     }
 
     // Global PDF operation preset (applies to every PDF without a per-file override).

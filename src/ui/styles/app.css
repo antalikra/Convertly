@@ -244,6 +244,9 @@ body.is-tab .shell {
 }
 .opt-input:focus { border-color: var(--accent); }
 .opt-input::placeholder { color: var(--text-tertiary); }
+.opt-input--num { min-width: 76px; width: 76px; }
+.trim { display: flex; align-items: center; gap: 8px; }
+.trim__dash { color: var(--text-tertiary); }
 /* Right-aligned caption for a control row (e.g. the PDF → DOCX Beta note). */
 .group__hint {
   max-width: 60%;

@@ -9,12 +9,13 @@ export async function encodeAudio(
   buffer: AudioBuffer,
   format: FormatId,
   quality = 0.9,
+  bitrate = 0,
 ): Promise<Blob> {
   if (format === 'wav') {
     return new Blob([encodeWav(buffer)], { type: 'audio/wav' });
   }
   if (format === 'mp3') {
-    return encodeMp3(buffer, quality);
+    return encodeMp3(buffer, quality, bitrate);
   }
   throw new Error(`Cannot encode to audio format "${format}"`);
 }
@@ -89,7 +90,7 @@ async function resample(buffer: AudioBuffer, targetRate: number): Promise<AudioB
   return oac.startRendering();
 }
 
-async function encodeMp3(buffer: AudioBuffer, quality: number): Promise<Blob> {
+async function encodeMp3(buffer: AudioBuffer, quality: number, bitrate = 0): Promise<Blob> {
   const { Mp3Encoder } = await import('@breezystack/lamejs');
 
   // Coerce to a sample rate lamejs accepts before touching the encoder.
@@ -99,7 +100,11 @@ async function encodeMp3(buffer: AudioBuffer, quality: number): Promise<Blob> {
 
   const numCh = Math.min(audio.numberOfChannels, 2); // lamejs: mono or stereo
   const sampleRate = audio.sampleRate;
-  const kbps = Math.min(320, Math.max(96, Math.round(96 + quality * 224)));
+  // Explicit bitrate wins; otherwise derive it from the quality slider.
+  const kbps =
+    bitrate > 0
+      ? Math.min(320, Math.max(64, Math.round(bitrate)))
+      : Math.min(320, Math.max(96, Math.round(96 + quality * 224)));
   const encoder = new Mp3Encoder(numCh, sampleRate, kbps);
 
   const left = floatToInt16(audio.getChannelData(0));

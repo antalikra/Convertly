@@ -86,6 +86,11 @@ export interface OutputFile {
 export interface ToolOptions {
   outputFormat: FormatId;
   quality?: number; // 0..1 for jpeg/webp
+  trimStart?: number; // audio: trim start (seconds)
+  trimEnd?: number; // audio: trim end (seconds); 0 = until the end
+  audioMono?: boolean; // audio: mix down to mono
+  normalize?: boolean; // audio: peak-normalize
+  audioBitrate?: number; // audio: MP3 bitrate (kbps)
   resize?: number; // 0..1 scale factor for image output; 1 = original
   resizeMode?: string; // 'percent' (use resize) | 'maxside' (use resizeMaxPx)
   resizeMaxPx?: number; // longest-side cap in px for 'maxside' mode

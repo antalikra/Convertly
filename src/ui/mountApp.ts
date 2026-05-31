@@ -1,5 +1,5 @@
 import { Controller, type AppState } from '@app/controller';
-import { LOSSY_FORMATS, inputCategory, type Category, type FormatId } from '@core/types';
+import { LOSSY_FORMATS, inputCategory, type Category } from '@core/types';
 import type { ThemeMode } from '@infra/settings';
 import { formatBytes } from '@shared/format';
 import { createDropzone, type DropzoneView } from './components/Dropzone';
@@ -143,6 +143,11 @@ export function mountApp(root: HTMLElement): Controller {
     onResizeMode: (mode) =>
       void controller.updateSettings({ resizeMode: mode as 'percent' | 'maxside' }),
     onResizeMax: (resizeMaxPx) => void controller.updateSettings({ resizeMaxPx }),
+    onTrimStart: (audioTrimStart) => void controller.updateSettings({ audioTrimStart }),
+    onTrimEnd: (audioTrimEnd) => void controller.updateSettings({ audioTrimEnd }),
+    onAudioMono: (audioMono) => void controller.updateSettings({ audioMono }),
+    onAudioNormalize: (audioNormalize) => void controller.updateSettings({ audioNormalize }),
+    onAudioBitrate: (audioBitrate) => void controller.updateSettings({ audioBitrate }),
     onOperation: (op) =>
       void controller.updateSettings({
         pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx' | 'compress',
@@ -284,8 +289,8 @@ export function mountApp(root: HTMLElement): Controller {
         available: controller.availableOutputFormats(category),
         selected: controller.targetFormat(category),
       }));
-    const selected: FormatId[] = rows.map((r) => r.selected);
     const imageRow = rows.find((r) => r.category === 'image');
+    const audioRow = rows.find((r) => r.category === 'audio');
     // Per-file document operations (incl. the global preset they fall back to)
     // drive which sub-controls show.
     const onDocsTab = activeTab === 'pdf';
@@ -300,12 +305,20 @@ export function mountApp(root: HTMLElement): Controller {
     options.update({
       rows,
       quality: state.settings.quality,
-      showQuality: anyPdfOp('tojpg') || selected.some((f) => LOSSY_FORMATS.includes(f)),
+      // Quality slider is for lossy IMAGE output; audio uses the Bitrate seg.
+      showQuality: anyPdfOp('tojpg') || (imageRow != null && LOSSY_FORMATS.includes(imageRow.selected)),
       resize: state.settings.resize,
       // Resize applies to raster output, not the images→PDF combine.
       showResize: imageRow != null && imageRow.selected !== 'pdf',
       resizeMode: state.settings.resizeMode,
       resizeMaxPx: state.settings.resizeMaxPx,
+      showAudio: activeTab === 'media' && audioRow != null,
+      trimStart: state.settings.audioTrimStart,
+      trimEnd: state.settings.audioTrimEnd,
+      audioMono: state.settings.audioMono,
+      audioNormalize: state.settings.audioNormalize,
+      showAudioBitrate: activeTab === 'media' && audioRow?.selected === 'mp3',
+      audioBitrate: state.settings.audioBitrate,
       // Global presets: shown whenever that kind of document is present.
       showPdfOps: onDocsTab && pdfJobs.length > 0,
       pdfOperation: state.settings.pdfOperation,
