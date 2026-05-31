@@ -25,7 +25,8 @@
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.0.227",
     "upng-js": "^2.1.0",
-    "utif2": "^4.1.0"
+    "utif2": "^4.1.0",
+    "wasm-media-encoders": "^0.7.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.28",

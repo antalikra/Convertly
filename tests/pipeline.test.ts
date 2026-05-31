@@ -418,7 +418,7 @@ describe('Controller.availableOutputFormats', () => {
     const c = new Controller();
     await c.addFiles([jpeg('a.jpg'), mp3('b.mp3')]);
     expect(c.categoriesPresent()).toEqual(['image', 'audio']);
-    expect(c.availableOutputFormats('audio')).toEqual(['wav', 'mp3']);
+    expect(c.availableOutputFormats('audio')).toEqual(['wav', 'mp3', 'ogg']);
   });
 
   it('pendingJobs equals convertibleJobs before anything is converted', async () => {

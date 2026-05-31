@@ -61,10 +61,10 @@ function processAudio(
  */
 export const audioConvertTool: Tool = {
   id: 'audio-convert',
-  title: 'Audio → WAV / MP3',
+  title: 'Audio → WAV / MP3 / OGG',
   category: 'audio',
   inputFormats: AUDIO_INPUTS,
-  outputFormats: ['wav', 'mp3'],
+  outputFormats: ['wav', 'mp3', 'ogg'],
   accepts: (i) => AUDIO_INPUTS.includes(i.detectedFormat as FormatId),
 
   async run(inputs, options, onProgress) {

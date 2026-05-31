@@ -38,6 +38,7 @@ export const OUTPUT_ORDER: readonly FormatId[] = [
   'bmp',
   'wav',
   'mp3',
+  'ogg',
   'pdf',
 ];
 

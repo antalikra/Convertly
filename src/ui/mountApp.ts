@@ -305,8 +305,11 @@ export function mountApp(root: HTMLElement): Controller {
     options.update({
       rows,
       quality: state.settings.quality,
-      // Quality slider is for lossy IMAGE output; audio uses the Bitrate seg.
-      showQuality: anyPdfOp('tojpg') || (imageRow != null && LOSSY_FORMATS.includes(imageRow.selected)),
+      // Quality slider: lossy IMAGE output, or OGG (VBR). MP3 uses the Bitrate seg.
+      showQuality:
+        anyPdfOp('tojpg') ||
+        (imageRow != null && LOSSY_FORMATS.includes(imageRow.selected)) ||
+        audioRow?.selected === 'ogg',
       resize: state.settings.resize,
       // Resize applies to raster output, not the images→PDF combine.
       showResize: imageRow != null && imageRow.selected !== 'pdf',

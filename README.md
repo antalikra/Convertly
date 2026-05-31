@@ -5,7 +5,7 @@ A Chrome (Manifest V3) extension that converts **images, audio and documents** f
 | Type | In | Out |
 |---|---|---|
 | **Images** | HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF | JPG, PNG, WebP, AVIF, TIFF, BMP |
-| **Audio** | MP3, WAV, FLAC, M4A, AAC, OGG | WAV, MP3 |
+| **Audio** | MP3, WAV, FLAC, M4A, AAC, OGG | WAV, MP3, OGG (Vorbis) |
 | **Documents** | PDF, DOCX | PDF, JPG, PNG, TXT, DOCX |
 
 **Document operations:** PDF rotate / split / merge, PDF → JPG/PNG (per page), PDF → text, PDF → DOCX (text, Beta); images → PDF; DOCX → PDF (Beta — *Visual* raster or *Text* reflow). The toolbar splits into **Media** and **Documents** views.
@@ -39,6 +39,7 @@ Load unpacked: `chrome://extensions` → Developer mode → Load unpacked → `d
 | `utif2` | TIFF decode + encode | MIT |
 | `upng-js` (+ `pako`) | PNG encode (quality = palette quantisation) | MIT |
 | `@breezystack/lamejs` | MP3 encode | LGPL-3.0 |
+| `wasm-media-encoders` | Ogg Vorbis encode (WASM, embedded; no eval) | MIT |
 | `fflate` | ZIP batch download + DOCX (OOXML) writing | MIT |
 | `pdf-lib` | PDF create / rotate / split / merge, images → PDF | MIT |
 | `pdfjs-dist` | PDF → image render + text extraction | Apache-2.0 |

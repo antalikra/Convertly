@@ -9,6 +9,7 @@ const LABEL: Record<string, string> = {
   bmp: 'BMP',
   wav: 'WAV',
   mp3: 'MP3',
+  ogg: 'OGG',
   pdf: 'PDF',
 };
 

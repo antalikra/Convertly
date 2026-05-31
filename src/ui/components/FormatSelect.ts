@@ -1,7 +1,7 @@
 import type { FormatId } from '@core/types';
 
 const LABEL: Record<string, string> = {
-  jpeg: 'JPG', png: 'PNG', webp: 'WebP', avif: 'AVIF', tiff: 'TIFF', bmp: 'BMP', wav: 'WAV', mp3: 'MP3', pdf: 'PDF',
+  jpeg: 'JPG', png: 'PNG', webp: 'WebP', avif: 'AVIF', tiff: 'TIFF', bmp: 'BMP', wav: 'WAV', mp3: 'MP3', ogg: 'OGG', pdf: 'PDF',
 };
 const label = (f: FormatId) => LABEL[f] ?? f.toUpperCase();
 

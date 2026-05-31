@@ -17,7 +17,34 @@ export async function encodeAudio(
   if (format === 'mp3') {
     return encodeMp3(buffer, quality, bitrate);
   }
+  if (format === 'ogg') {
+    return encodeOgg(buffer, quality);
+  }
   throw new Error(`Cannot encode to audio format "${format}"`);
+}
+
+/** Ogg Vorbis via wasm-media-encoders (lazy; the wasm is embedded in the module,
+ *  so it loads offline and stays CSP-safe — no eval, no remote fetch). The VBR
+ *  quality (0..10) is mapped from the 0..1 quality slider. */
+async function encodeOgg(buffer: AudioBuffer, quality: number): Promise<Blob> {
+  const { createOggEncoder } = await import('wasm-media-encoders');
+  const encoder = await createOggEncoder();
+  const channels = Math.min(2, buffer.numberOfChannels); // encoder: mono or stereo
+
+  encoder.configure({
+    channels,
+    sampleRate: buffer.sampleRate,
+    vbrQuality: Math.max(0, Math.min(10, Math.round(quality * 10))),
+  });
+
+  const samples: Float32Array[] = [buffer.getChannelData(0)];
+  if (channels > 1) samples.push(buffer.getChannelData(1));
+
+  // The returned views alias the encoder's memory — copy before the next call.
+  const parts: Uint8Array[] = [];
+  parts.push(new Uint8Array(encoder.encode(samples)));
+  parts.push(new Uint8Array(encoder.finalize()));
+  return new Blob(parts as BlobPart[], { type: 'audio/ogg' });
 }
 
 /** Interleave channels and write a standard 44-byte PCM WAV (16-bit). */
