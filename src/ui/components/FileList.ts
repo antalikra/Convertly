@@ -73,8 +73,8 @@ export interface FileListCallbacks {
   onDownloadOutput(id: string, index: number): void;
   onGroup(id: string, group: number): void;
   onNewGroup(id: string): void;
-  /** Drag-reorder: move `draggedId` to just before `targetId`. */
-  onReorder(draggedId: string, targetId: string): void;
+  /** Drag-reorder: move `draggedId` before `targetId`, or to the end (null). */
+  onReorder(draggedId: string, targetId: string | null): void;
 }
 
 interface RowHandle {
@@ -148,7 +148,7 @@ export function createFileList(cb: FileListCallbacks): FileListHandle {
         seen.add(id);
         let row = rows.get(id);
         if (!row) {
-          row = createRow(v, cb);
+          row = createRow(v, cb, beginDrag);
           rows.set(id, row);
           s.body.appendChild(row.el); // new node animates in via CSS
         }
@@ -179,30 +179,91 @@ export function createFileList(cb: FileListCallbacks): FileListHandle {
     );
   }
 
+  // FLIP: animate the section's rows from their old to new positions after a live
+  // DOM reorder during a drag (so siblings glide instead of jumping).
+  function flipReorder(section: HTMLElement, mutate: () => void): void {
+    const items = Array.from(section.querySelectorAll<HTMLElement>('.fileitem'));
+    const before = new Map(items.map((it) => [it, it.getBoundingClientRect().top]));
+    mutate();
+    for (const it of items) {
+      const dy = (before.get(it) ?? 0) - it.getBoundingClientRect().top;
+      if (!dy) continue;
+      it.style.transition = 'none';
+      it.style.transform = `translateY(${dy}px)`;
+      requestAnimationFrame(() => {
+        it.style.transition = 'transform 180ms cubic-bezier(0.2,0,0,1)';
+        it.style.transform = '';
+      });
+    }
+  }
+
+  // Pointer drag from a row's grip: a floating clone follows the cursor; siblings
+  // shift (FLIP) to open the drop slot; the new order is committed on release.
+  function beginDrag(rowEl: HTMLElement, jobId: string, ev: PointerEvent): void {
+    ev.preventDefault();
+    const section = rowEl.parentElement;
+    if (!section) return;
+    const rect = rowEl.getBoundingClientRect();
+    const offX = ev.clientX - rect.left;
+    const offY = ev.clientY - rect.top;
+
+    const clone = rowEl.cloneNode(true) as HTMLElement;
+    clone.classList.add('fileitem--ghost');
+    clone.style.cssText =
+      `position:fixed;margin:0;pointer-events:none;z-index:1000;width:${rect.width}px;` +
+      `left:${rect.left}px;top:${rect.top}px;`;
+    document.body.appendChild(clone);
+    rowEl.classList.add('is-placeholder');
+    document.body.classList.add('is-reordering');
+
+    let moved = false;
+    const onMove = (e: PointerEvent): void => {
+      clone.style.left = `${e.clientX - offX}px`;
+      clone.style.top = `${e.clientY - offY}px`;
+      const sibs = Array.from(section.querySelectorAll<HTMLElement>('.fileitem')).filter(
+        (s) => s !== rowEl,
+      );
+      let ref: HTMLElement | null = null;
+      for (const s of sibs) {
+        const r = s.getBoundingClientRect();
+        if (e.clientY < r.top + r.height / 2) {
+          ref = s;
+          break;
+        }
+      }
+      if (rowEl.nextElementSibling !== ref) {
+        flipReorder(section, () => section.insertBefore(rowEl, ref));
+        moved = true;
+      }
+    };
+    const onUp = (): void => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      clone.remove();
+      rowEl.classList.remove('is-placeholder');
+      document.body.classList.remove('is-reordering');
+      if (moved) {
+        const next = rowEl.nextElementSibling as HTMLElement | null;
+        cb.onReorder(jobId, next?.dataset.id ?? null);
+      }
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }
+
   return { el, update };
 }
 
-function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
+function createRow(
+  view: JobView,
+  cb: FileListCallbacks,
+  beginDrag: (rowEl: HTMLElement, id: string, ev: PointerEvent) => void,
+): RowHandle {
   const id = view.job.input.id;
 
   const el = document.createElement('div');
   el.className = 'fileitem fileitem--enter';
-  el.dataset.id = id;
-  // Drop target. Order matters for merge / images→PDF; the controller restricts a
-  // move to the same category. Dragging is initiated only from the grip handle
-  // (below) so it doesn't fight the row's dropdowns/buttons.
-  el.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    el.classList.add('is-dragover');
-  });
-  el.addEventListener('dragleave', () => el.classList.remove('is-dragover'));
-  el.addEventListener('drop', (e) => {
-    e.preventDefault();
-    el.classList.remove('is-dragover');
-    const draggedId = e.dataTransfer?.getData('text/plain');
-    if (draggedId && draggedId !== id) cb.onReorder(draggedId, id);
-  });
+  el.dataset.id = id; // read on drop to compute the new neighbour
 
   // The main flex line; a multi-output (split) job adds an expandable sublist below.
   const row = document.createElement('div');
@@ -211,16 +272,10 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   // Drag handle (the only draggable part — keeps row controls clickable).
   const grip = document.createElement('span');
   grip.className = 'fileitem__grip';
-  grip.draggable = true;
   grip.title = 'Drag to reorder';
   grip.setAttribute('aria-label', 'Drag to reorder');
   grip.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
-  grip.addEventListener('dragstart', (e) => {
-    e.dataTransfer?.setData('text/plain', id);
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-    el.classList.add('is-dragging');
-  });
-  grip.addEventListener('dragend', () => el.classList.remove('is-dragging'));
+  grip.addEventListener('pointerdown', (e) => beginDrag(el, id, e));
 
   const bubble = document.createElement('span');
   bubble.className = `fbubble fbubble--${bubbleKind(view.job.input)}`;

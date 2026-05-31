@@ -145,7 +145,7 @@ export function mountApp(root: HTMLElement): Controller {
     onResizeMax: (resizeMaxPx) => void controller.updateSettings({ resizeMaxPx }),
     onOperation: (op) =>
       void controller.updateSettings({
-        pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx',
+        pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx' | 'compress',
       }),
     onDocxOperation: (op) =>
       void controller.updateSettings({ docxOperation: op as 'topdf' | 'totext' | 'tohtml' }),

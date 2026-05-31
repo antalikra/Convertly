@@ -423,18 +423,33 @@ export class Controller {
   /** Reorder: move `draggedId` to sit just before `targetId` in the job list.
    *  The list order is the order aggregate tools (merge / images→PDF) combine
    *  files in, so this lets the user control e.g. the merged page order. */
-  moveJob(draggedId: string, targetId: string): void {
+  moveJob(draggedId: string, targetId: string | null): void {
     if (draggedId === targetId) return;
     const dragged = this.state.jobs.find((j) => j.input.id === draggedId);
-    const target = this.state.jobs.find((j) => j.input.id === targetId);
-    if (!dragged || !target) return;
-    // Reorder only within a category (the list is bucketed per category on screen).
-    if (inputCategory(dragged.input) !== inputCategory(target.input)) return;
-    const next = this.state.jobs.filter((j) => j.input.id !== draggedId);
-    next.splice(next.findIndex((j) => j.input.id === targetId), 0, dragged);
+    if (!dragged) return;
+    const cat = inputCategory(dragged.input);
+    const rest = this.state.jobs.filter((j) => j.input.id !== draggedId);
+
+    let insertAt: number;
+    if (targetId == null) {
+      // Move to the end of its own category (after the last same-category job).
+      insertAt = rest.length;
+      for (let i = rest.length - 1; i >= 0; i--) {
+        if (inputCategory(rest[i].input) === cat) {
+          insertAt = i + 1;
+          break;
+        }
+      }
+    } else {
+      const target = rest.find((j) => j.input.id === targetId);
+      // Reorder only within a category (the list is bucketed per category on screen).
+      if (!target || inputCategory(target.input) !== cat) return;
+      insertAt = rest.findIndex((j) => j.input.id === targetId);
+    }
+    rest.splice(insertAt, 0, dragged);
     // A new order means any combined file is stale.
     this.dropAggregates(this.categoriesOf([dragged.input]));
-    this.state = { ...this.state, jobs: next };
+    this.state = { ...this.state, jobs: rest };
     this.emit();
   }
 

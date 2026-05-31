@@ -17,7 +17,8 @@ export type PdfOperation =
   | 'tojpg'
   | 'topng'
   | 'totext'
-  | 'todocx';
+  | 'todocx'
+  | 'compress';
 
 /** Operation chosen for DOCX inputs (the document card's DOCX picker). */
 export type DocxOperation = 'topdf' | 'totext' | 'tohtml';

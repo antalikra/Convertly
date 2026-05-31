@@ -316,7 +316,7 @@ body.is-empty .dropzone { flex: 1 1 auto; }
   align-items: center;
   justify-content: center;
   min-height: 34px;
-  padding: 8px 14px;
+  padding: 8px 11px;
   border: none;
   border-radius: calc(var(--r-tile) - 4px);
   background: transparent;
@@ -418,9 +418,6 @@ input[type="range"] {
   border-top: 1px solid var(--border-subtle);
 }
 .fileitem:first-child { border-top: none; }
-.fileitem.is-dragging { opacity: 0.45; }
-/* Drop indicator: a thick accent line on top of the row being dropped onto. */
-.fileitem.is-dragover { box-shadow: inset 0 2px 0 0 var(--accent); }
 /* Drag handle — the only draggable part of a row. */
 .fileitem__grip {
   display: inline-flex;
@@ -428,10 +425,33 @@ input[type="range"] {
   cursor: grab;
   color: var(--text-tertiary);
   border-radius: 6px;
+  touch-action: none; /* let pointer-drag own the gesture (no scroll) */
 }
 .fileitem__grip:hover { color: var(--text-secondary); background: var(--surface-hover); }
 .fileitem__grip:active { cursor: grabbing; }
 .fileitem__grip svg { width: 18px; height: 18px; fill: currentColor; }
+/* The row left behind while its clone is dragged: a clear, faded drop slot. */
+.fileitem.is-placeholder {
+  opacity: 0.5;
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+  border-radius: var(--r-tile);
+}
+.fileitem.is-placeholder * { visibility: hidden; }
+body.is-reordering { cursor: grabbing; user-select: none; }
+/* Floating clone that follows the cursor (the carried row), with a light wobble. */
+.fileitem--ghost {
+  background: var(--surface-toggle-off);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-tile);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  padding: 0 10px;
+  animation: dragJiggle 320ms ease-in-out infinite;
+}
+@keyframes dragJiggle {
+  0%, 100% { transform: scale(1.03) rotate(-0.7deg); }
+  50% { transform: scale(1.03) rotate(0.7deg); }
+}
 .fileitem__row {
   display: flex;
   align-items: center;

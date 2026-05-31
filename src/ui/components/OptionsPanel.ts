@@ -128,6 +128,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="seg__btn" role="radio" data-op="topng">PNG</button>
         <button type="button" class="seg__btn" role="radio" data-op="totext">Text</button>
         <button type="button" class="seg__btn" role="radio" data-op="todocx">DOCX</button>
+        <button type="button" class="seg__btn" role="radio" data-op="compress">Compress</button>
       </div>
     </div>
     <div class="group__row" data-pdfop-hint-row style="display:none">
