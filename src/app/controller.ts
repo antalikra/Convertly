@@ -33,6 +33,7 @@ export const PDF_OPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'totext', label: 'To text' },
   { id: 'todocx', label: 'To DOCX' },
   { id: 'compress', label: 'Compress' },
+  { id: 'pages', label: 'Pages' },
 ];
 export const DOCX_OPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'topdf', label: 'To PDF' },
@@ -410,6 +411,7 @@ export class Controller {
       pdfPageSize: this.state.settings.pdfPageSize,
       pdfOrientation: this.state.settings.pdfOrientation,
       pdfMargin: this.state.settings.pdfMargin,
+      pageRange: this.state.settings.pdfPageRange,
     };
   }
 

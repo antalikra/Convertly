@@ -42,6 +42,8 @@ export interface Settings {
   pdfPageSize: PdfPageSize;
   pdfOrientation: PdfOrientation;
   pdfMargin: number;
+  /** PDF "Pages" op: which pages to keep, in order, e.g. "1-3, 5, 8-10". */
+  pdfPageRange: string;
   /** Operation applied to PDF inputs. */
   pdfOperation: PdfOperation;
   /** Clockwise rotation for the PDF rotate operation (degrees, multiple of 90). */
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfPageSize: 'fit',
   pdfOrientation: 'auto',
   pdfMargin: 0,
+  pdfPageRange: '',
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,

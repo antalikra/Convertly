@@ -157,6 +157,7 @@ export function mountApp(root: HTMLElement): Controller {
       void controller.updateSettings({ pdfOrientation: o as 'auto' | 'portrait' | 'landscape' }),
     onPdfMargin: (pdfMargin) => void controller.updateSettings({ pdfMargin }),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
+    onPageRange: (pdfPageRange) => void controller.updateSettings({ pdfPageRange }),
     onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
   const fileList = createFileList({
@@ -319,6 +320,8 @@ export function mountApp(root: HTMLElement): Controller {
       showDocxMode: anyDocxOp('topdf'),
       docxMode: state.settings.docxMode,
       showDocxHint: anyPdfOp('todocx'),
+      showPages: anyPdfOp('pages'),
+      pageRange: state.settings.pdfPageRange,
     });
 
     fileList.update(

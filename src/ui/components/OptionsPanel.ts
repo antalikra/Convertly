@@ -58,6 +58,9 @@ export interface OptionsView {
   docxMode: string; // 'raster' | 'reflow'
   /** "Text only" Beta hint — shown when a PDF is set to To DOCX. */
   showDocxHint: boolean;
+  /** Page-range input — shown when a PDF is set to Pages. */
+  showPages: boolean;
+  pageRange: string;
 }
 
 export interface OptionsHandlers {
@@ -75,6 +78,7 @@ export interface OptionsHandlers {
   onPdfOrientation(orientation: string): void;
   onPdfMargin(margin: number): void;
   onScale(scale: number): void;
+  onPageRange(spec: string): void;
   onDocxMode(mode: 'raster' | 'reflow'): void;
 }
 
@@ -130,6 +134,10 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="seg__btn" role="radio" data-op="todocx">DOCX</button>
         <button type="button" class="seg__btn" role="radio" data-op="compress">Compress</button>
       </div>
+    </div>
+    <div class="group__row" data-pagerange-row style="display:none">
+      <span class="group__label">Pages</span>
+      <input type="text" class="opt-input" data-pagerange placeholder="e.g. 1-3, 5, 8-10" aria-label="Pages to keep" />
     </div>
     <div class="group__row" data-pdfop-hint-row style="display:none">
       <span class="group__label">To DOCX <span class="badge badge--accent badge--beta">Beta</span></span>
@@ -223,6 +231,8 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const rotateSeg = el.querySelector<HTMLElement>('[data-rotate-seg]')!;
   const pdfopRow = el.querySelector<HTMLElement>('[data-pdfop-row]')!;
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
+  const pagerangeRow = el.querySelector<HTMLElement>('[data-pagerange-row]')!;
+  const pagerangeInput = el.querySelector<HTMLInputElement>('[data-pagerange]')!;
   const pdfopHintRow = el.querySelector<HTMLElement>('[data-pdfop-hint-row]')!;
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
   const pdfpageRow = el.querySelector<HTMLElement>('[data-pdfpage-row]')!;
@@ -240,6 +250,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
 
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
+  pagerangeInput.addEventListener('input', () => h.onPageRange(pagerangeInput.value));
   for (const b of Array.from(resizemodeSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onResizeMode(String(b.dataset.resizemode)));
   }
@@ -290,7 +301,8 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       !v.showScale &&
       !v.showCombine &&
       !v.showDocxMode &&
-      !v.showDocxHint
+      !v.showDocxHint &&
+      !v.showPages
     ) {
       el.hidden = true;
       return;
@@ -424,6 +436,12 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         b.setAttribute('aria-checked', String(active));
       }
       syncPill(docxSeg);
+    }
+
+    // PDF Pages: which pages to keep/reorder. Don't clobber the field while typing.
+    pagerangeRow.style.display = v.showPages ? '' : 'none';
+    if (v.showPages && document.activeElement !== pagerangeInput) {
+      pagerangeInput.value = v.pageRange;
     }
 
     // PDF → DOCX is a best-effort text extraction; flag it (Beta) when chosen.

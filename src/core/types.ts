@@ -94,6 +94,7 @@ export interface ToolOptions {
   pdfPageSize?: string; // images → PDF: 'fit' | 'a4' | 'letter'
   pdfOrientation?: string; // images → PDF: 'auto' | 'portrait' | 'landscape'
   pdfMargin?: number; // images → PDF: page margin in pt
+  pageRange?: string; // PDF 'pages' op: pages to keep, e.g. "1-3, 5, 8-10"
   operation?: string; // disambiguates tools sharing an output format (e.g. PDF rotate vs split)
   [key: string]: unknown; // room for future tool options
 }

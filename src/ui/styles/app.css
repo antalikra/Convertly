@@ -230,6 +230,20 @@ body.is-tab .shell {
   font-size: var(--fs-sm);
   color: var(--text-primary);
 }
+/* Text input for an option row (e.g. the PDF page range). */
+.opt-input {
+  background: var(--surface-toggle-off);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-pill);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  padding: 7px 12px;
+  min-width: 200px;
+  outline: none;
+  transition: border-color var(--dur-fast);
+}
+.opt-input:focus { border-color: var(--accent); }
+.opt-input::placeholder { color: var(--text-tertiary); }
 /* Right-aligned caption for a control row (e.g. the PDF → DOCX Beta note). */
 .group__hint {
   max-width: 60%;

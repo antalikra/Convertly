@@ -34,7 +34,8 @@ describe('ToolRegistry', () => {
     expect(reg.getById('docx-to-text')).toBeDefined();
     expect(reg.getById('docx-to-html')).toBeDefined();
     expect(reg.getById('pdf-compress')).toBeDefined();
-    expect(reg.all()).toHaveLength(15);
+    expect(reg.getById('pdf-pages')).toBeDefined();
+    expect(reg.all()).toHaveLength(16);
   });
 
   it('rejects duplicate ids', () => {
@@ -68,9 +69,11 @@ describe('ToolRegistry', () => {
     const reg = buildRegistry();
     const tools = reg.findForConversion(input('pdf', 'doc.pdf'), 'pdf');
     expect(tools.map((t) => t.id).sort()).toEqual([
-      'pdf-compress', 'pdf-merge', 'pdf-rotate', 'pdf-split',
+      'pdf-compress', 'pdf-merge', 'pdf-pages', 'pdf-rotate', 'pdf-split',
     ]);
-    expect(tools.map((t) => t.operation).sort()).toEqual(['compress', 'merge', 'rotate', 'split']);
+    expect(tools.map((t) => t.operation).sort()).toEqual([
+      'compress', 'merge', 'pages', 'rotate', 'split',
+    ]);
   });
 
   it('resolve() picks the PDF tool by operation', () => {
@@ -80,6 +83,7 @@ describe('ToolRegistry', () => {
     expect(reg.resolve(pdf, 'pdf', 'split')?.id).toBe('pdf-split');
     expect(reg.resolve(pdf, 'pdf', 'merge')?.id).toBe('pdf-merge');
     expect(reg.resolve(pdf, 'pdf', 'compress')?.id).toBe('pdf-compress');
+    expect(reg.resolve(pdf, 'pdf', 'pages')?.id).toBe('pdf-pages');
     // The merge tool is the aggregate (N→1) one.
     expect(reg.resolve(pdf, 'pdf', 'merge')?.aggregate).toBe(true);
     // Single-handler pairs ignore operation.
@@ -108,9 +112,9 @@ describe('ToolRegistry', () => {
     expect(reg.resolve(pdf, 'png')?.id).toBe('pdf-to-images');
     expect(reg.resolve(pdf, 'txt')?.id).toBe('pdf-to-text');
     expect(reg.resolve(pdf, 'docx')?.id).toBe('pdf-to-docx');
-    // pdf → pdf only the rotate/split/merge/compress tools.
+    // pdf → pdf only the rotate/split/merge/compress/pages tools.
     expect(reg.findForConversion(pdf, 'pdf').map((t) => t.id).sort()).toEqual([
-      'pdf-compress', 'pdf-merge', 'pdf-rotate', 'pdf-split',
+      'pdf-compress', 'pdf-merge', 'pdf-pages', 'pdf-rotate', 'pdf-split',
     ]);
   });
 
