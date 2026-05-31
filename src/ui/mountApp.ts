@@ -144,17 +144,18 @@ export function mountApp(root: HTMLElement): Controller {
       void controller.updateSettings({
         pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx',
       }),
+    onDocxOperation: (op) =>
+      void controller.updateSettings({ docxOperation: op as 'topdf' | 'totext' | 'tohtml' }),
     onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
     onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
-    onDocxOperation: (op) =>
-      void controller.updateSettings({ docxOperation: op as 'topdf' | 'totext' | 'tohtml' }),
     onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
   const fileList = createFileList({
     onRemove: (id) => controller.removeJob(id),
     onDownload: (id) => controller.downloadOne(id),
     onFormat: (id, format) => controller.setJobFormat(id, format),
+    onOperation: (id, op) => controller.setJobOperation(id, op),
     onDownloadOutput: (id, index) => controller.downloadOutput(id, index),
     onGroup: (id, group) => controller.setJobGroup(id, group),
     onNewGroup: (id) => controller.addJobToNewGroup(id),
@@ -271,49 +272,51 @@ export function mountApp(root: HTMLElement): Controller {
       }));
     const selected: FormatId[] = rows.map((r) => r.selected);
     const imageRow = rows.find((r) => r.category === 'image');
-    // Distinguish real PDF inputs from DOCX (both land in the document category).
-    const hasPdfInput = state.jobs.some((j) => j.input.detectedFormat === 'pdf');
-    const hasDocxInput = state.jobs.some((j) => j.input.detectedFormat === 'docx');
+    // Per-file document operations (incl. the global preset they fall back to)
+    // drive which sub-controls show.
+    const onDocsTab = activeTab === 'pdf';
+    const docJobs = state.jobs.filter((j) => inputCategory(j.input) === 'document');
+    const pdfJobs = docJobs.filter((j) => j.input.detectedFormat === 'pdf');
+    const docxJobs = docJobs.filter((j) => j.input.detectedFormat === 'docx');
+    const anyPdfOp = (op: string) => onDocsTab && pdfJobs.some((j) => controller.docOperation(j) === op);
+    const anyDocxOp = (op: string) => onDocsTab && docxJobs.some((j) => controller.docOperation(j) === op);
     // Combine presets matter only when the active tab's target is an aggregate.
     const showCombine =
-      (activeTab === 'media' && imageRow?.selected === 'pdf') ||
-      (activeTab === 'pdf' && hasPdfInput && state.settings.pdfOperation === 'merge');
-    // Quality applies to PDF → JPG; the scale seg to both PDF → image ops.
-    const docOp = state.settings.pdfOperation;
-    const docActive = activeTab === 'pdf' && hasPdfInput;
-    const pdfJpg = docActive && docOp === 'tojpg';
-    const pdfToImage = docActive && (docOp === 'tojpg' || docOp === 'topng');
+      (activeTab === 'media' && imageRow?.selected === 'pdf') || anyPdfOp('merge');
     options.update({
       rows,
       quality: state.settings.quality,
-      showQuality: pdfJpg || selected.some((f) => LOSSY_FORMATS.includes(f)),
+      showQuality: anyPdfOp('tojpg') || selected.some((f) => LOSSY_FORMATS.includes(f)),
       resize: state.settings.resize,
       // Resize applies to raster output, not the images→PDF combine.
       showResize: imageRow != null && imageRow.selected !== 'pdf',
-      showPdfOps: activeTab === 'pdf' && hasPdfInput,
+      // Global presets: shown whenever that kind of document is present.
+      showPdfOps: onDocsTab && pdfJobs.length > 0,
       pdfOperation: state.settings.pdfOperation,
-      mergeDisabled: hasPdfInput
-        ? state.jobs.filter((j) => j.input.detectedFormat === 'pdf').length < 2
-        : true, // merge needs ≥2 actual PDFs (DOCX doesn't count)
+      mergeDisabled: pdfJobs.length < 2,
+      showDocxOps: onDocsTab && docxJobs.length > 0,
+      docxOperation: state.settings.docxOperation,
+      showRotate: anyPdfOp('rotate'),
       rotateAngle: state.settings.pdfRotateAngle,
       showCombine,
-      showScale: pdfToImage,
+      showScale: anyPdfOp('tojpg') || anyPdfOp('topng'),
       pdfScale: state.settings.pdfImageScale,
-      showDocxOps: activeTab === 'pdf' && hasDocxInput,
-      docxOperation: state.settings.docxOperation,
-      showDocxMode:
-        activeTab === 'pdf' && hasDocxInput && state.settings.docxOperation === 'topdf',
+      showDocxMode: anyDocxOp('topdf'),
       docxMode: state.settings.docxMode,
+      showDocxHint: anyPdfOp('todocx'),
     });
 
     fileList.update(
       visible.map((job) => {
         const category = inputCategory(job.input);
         const isAggregate = controller.isAggregateTarget(job);
+        const isDoc = category === 'document';
         return {
           job,
-          // Documents are driven by the operation picker, not a per-row format dropdown.
-          options: category && category !== 'document' ? controller.availableOutputFormats(category) : [],
+          // Media files pick an output format; document files pick an operation.
+          options: category && !isDoc ? controller.availableOutputFormats(category) : [],
+          docOps: isDoc ? controller.docOperationsFor(job) : undefined,
+          docOp: isDoc ? controller.docOperation(job) : undefined,
           target: controller.resolveTarget(job),
           isAggregate,
           group: isAggregate ? controller.groupOf(job) : undefined,

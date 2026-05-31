@@ -595,6 +595,11 @@ body.is-busy .filelist-wrap { pointer-events: none; }
   font-weight: var(--fw-bold);
   flex-shrink: 0;
 }
+/* Colour the type bubble per file kind so PDF/DOCX/audio stand out at a glance.
+   (Images keep the default accent violet.) */
+.fbubble--pdf { background: rgba(229, 72, 77, 0.16); color: #e5687c; }
+.fbubble--docx { background: rgba(74, 110, 224, 0.18); color: #7b94f4; }
+.fbubble--audio { background: rgba(245, 159, 11, 0.16); color: #f0a43a; }
 .fileitem__info { flex: 1; min-width: 0; }
 .fileitem__name {
   font-size: var(--fs-sm);

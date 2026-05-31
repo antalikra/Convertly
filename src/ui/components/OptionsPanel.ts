@@ -30,34 +30,39 @@ export interface OptionsView {
   showQuality: boolean;
   resize: number;
   showResize: boolean;
-  /** PDF operation picker (Rotate / Split): shown when a PDF input is present. */
+  /** Global PDF operation preset (applies to all PDFs without a per-file override). */
   showPdfOps: boolean;
-  pdfOperation: string; // 'rotate' | 'split' | 'merge'
-  /** Disable Merge when there's nothing to merge (< 2 PDFs). */
+  pdfOperation: string;
+  /** Disable global Merge when there's nothing to merge (< 2 PDFs). */
   mergeDisabled: boolean;
-  rotateAngle: number; // angle sub-control shown only when operation is 'rotate'
+  /** Global DOCX operation preset. */
+  showDocxOps: boolean;
+  docxOperation: string;
+  /** Rotation-angle seg — shown when a document is set to Rotate. */
+  showRotate: boolean;
+  rotateAngle: number;
   /** Combine presets (All in one / Each separate) — shown for aggregate targets. */
   showCombine: boolean;
-  /** Render-scale seg — shown for PDF → image operations. */
+  /** Render-scale seg — shown when a document is set to To JPG / To PNG. */
   showScale: boolean;
   pdfScale: number;
-  /** DOCX operation picker (To PDF / To text / To HTML) — shown when a DOCX input is present. */
-  showDocxOps: boolean;
-  docxOperation: string; // 'topdf' | 'totext' | 'tohtml'
-  /** DOCX → PDF mode seg (Beta) — shown only when the DOCX operation is 'topdf'. */
+  /** DOCX → PDF mode seg (Beta) — shown when a DOCX is set to To PDF. */
   showDocxMode: boolean;
   docxMode: string; // 'raster' | 'reflow'
+  /** "Text only" Beta hint — shown when a PDF is set to To DOCX. */
+  showDocxHint: boolean;
 }
 
 export interface OptionsHandlers {
   onFormat(category: Category, format: FormatId): void;
   onQuality(quality: number): void;
   onResize(resize: number): void;
+  /** Global PDF / DOCX operation presets (apply to all files of that kind). */
   onOperation(operation: string): void;
+  onDocxOperation(operation: string): void;
   onRotate(angle: number): void;
   onCombine(mode: 'one' | 'separate'): void;
   onScale(scale: number): void;
-  onDocxOperation(operation: string): void;
   onDocxMode(mode: 'raster' | 'reflow'): void;
 }
 
@@ -84,15 +89,15 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     </div>
     <div class="group__row" data-pdfop-row>
       <span class="group__label">PDF</span>
-      <div class="seg" data-pdfop-seg role="radiogroup" aria-label="PDF operation">
+      <div class="seg" data-pdfop-seg role="radiogroup" aria-label="PDF operation (all files)">
         <span class="seg__pill no-anim"></span>
         <button type="button" class="seg__btn" role="radio" data-op="rotate">Rotate</button>
-        <button type="button" class="seg__btn" role="radio" data-op="split">Split pages</button>
+        <button type="button" class="seg__btn" role="radio" data-op="split">Split</button>
         <button type="button" class="seg__btn" role="radio" data-op="merge">Merge</button>
-        <button type="button" class="seg__btn" role="radio" data-op="tojpg">To JPG</button>
-        <button type="button" class="seg__btn" role="radio" data-op="topng">To PNG</button>
-        <button type="button" class="seg__btn" role="radio" data-op="totext">To text</button>
-        <button type="button" class="seg__btn" role="radio" data-op="todocx">To DOCX</button>
+        <button type="button" class="seg__btn" role="radio" data-op="tojpg">JPG</button>
+        <button type="button" class="seg__btn" role="radio" data-op="topng">PNG</button>
+        <button type="button" class="seg__btn" role="radio" data-op="totext">Text</button>
+        <button type="button" class="seg__btn" role="radio" data-op="todocx">DOCX</button>
       </div>
     </div>
     <div class="group__row" data-pdfop-hint-row style="display:none">
@@ -128,11 +133,11 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     </div>
     <div class="group__row" data-docxop-row>
       <span class="group__label">DOCX</span>
-      <div class="seg" data-docxop-seg role="radiogroup" aria-label="DOCX operation">
+      <div class="seg" data-docxop-seg role="radiogroup" aria-label="DOCX operation (all files)">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-docxop="topdf">To PDF</button>
-        <button type="button" class="seg__btn" role="radio" data-docxop="totext">To text</button>
-        <button type="button" class="seg__btn" role="radio" data-docxop="tohtml">To HTML</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="topdf">PDF</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="totext">Text</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="tohtml">HTML</button>
       </div>
     </div>
     <div class="group__row" data-docx-row>
@@ -172,19 +177,18 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   }
   for (const b of Array.from(pdfopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => {
-      // Keep the button enabled (so its title tooltip shows on hover) and gate here.
-      if (b.getAttribute('aria-disabled') === 'true') return;
+      if (b.getAttribute('aria-disabled') === 'true') return; // gated (e.g. Merge < 2)
       h.onOperation(String(b.dataset.op));
     });
+  }
+  for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onDocxOperation(String(b.dataset.docxop)));
   }
   for (const b of Array.from(combineRow.querySelectorAll<HTMLButtonElement>('[data-combine]'))) {
     b.addEventListener('click', () => h.onCombine(b.dataset.combine as 'one' | 'separate'));
   }
   for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onScale(Number(b.dataset.scale)));
-  }
-  for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
-    b.addEventListener('click', () => h.onDocxOperation(String(b.dataset.docxop)));
   }
   for (const b of Array.from(docxSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onDocxMode(b.dataset.docx as 'raster' | 'reflow'));
@@ -193,8 +197,18 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   let renderedSig = '';
 
   function update(v: OptionsView): void {
-    // Panel is also relevant for document-only inputs (PDF op picker / DOCX mode).
-    if (v.rows.length === 0 && !v.showPdfOps && !v.showDocxOps) {
+    // Panel is also relevant for documents when their operation has a sub-control
+    // (rotation angle, render scale, combine, DOCX→PDF mode, the To DOCX hint).
+    if (
+      v.rows.length === 0 &&
+      !v.showPdfOps &&
+      !v.showDocxOps &&
+      !v.showRotate &&
+      !v.showScale &&
+      !v.showCombine &&
+      !v.showDocxMode &&
+      !v.showDocxHint
+    ) {
       el.hidden = true;
       return;
     }
@@ -227,6 +241,35 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     resize.value = String(v.resize);
     resizeVal.textContent = v.resize >= 1 ? 'Original' : `${Math.round(v.resize * 100)}%`;
 
+    // Global PDF operation preset (applies to every PDF without a per-file override).
+    pdfopRow.style.display = v.showPdfOps ? '' : 'none';
+    if (v.showPdfOps) {
+      for (const b of Array.from(pdfopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.op === v.pdfOperation;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+        // Merge needs ≥2 PDFs: keep it enabled (so the hover tooltip shows) but gate it.
+        if (b.dataset.op === 'merge') {
+          b.classList.toggle('seg__btn--disabled', v.mergeDisabled);
+          b.setAttribute('aria-disabled', String(v.mergeDisabled));
+          if (v.mergeDisabled) b.dataset.tip = 'Add at least one more PDF';
+          else delete b.dataset.tip;
+        }
+      }
+      syncPill(pdfopSeg);
+    }
+
+    // Global DOCX operation preset.
+    docxopRow.style.display = v.showDocxOps ? '' : 'none';
+    if (v.showDocxOps) {
+      for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.docxop === v.docxOperation;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(docxopSeg);
+    }
+
     combineRow.style.display = v.showCombine ? '' : 'none';
 
     // PDF → image render scale.
@@ -240,17 +283,6 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       syncPill(scaleSeg);
     }
 
-    // DOCX operation picker (To PDF / To text / To HTML).
-    docxopRow.style.display = v.showDocxOps ? '' : 'none';
-    if (v.showDocxOps) {
-      for (const b of Array.from(docxopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
-        const active = b.dataset.docxop === v.docxOperation;
-        b.classList.toggle('seg__btn--active', active);
-        b.setAttribute('aria-checked', String(active));
-      }
-      syncPill(docxopSeg);
-    }
-
     // DOCX → PDF mode (Beta) — only relevant when the DOCX target is PDF.
     docxRow.style.display = v.showDocxMode ? '' : 'none';
     if (v.showDocxMode) {
@@ -262,34 +294,12 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       syncPill(docxSeg);
     }
 
-    // PDF operation picker (Rotate / Split).
-    pdfopRow.style.display = v.showPdfOps ? '' : 'none';
-    if (v.showPdfOps) {
-      for (const b of Array.from(pdfopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
-        const active = b.dataset.op === v.pdfOperation;
-        b.classList.toggle('seg__btn--active', active);
-        b.setAttribute('aria-checked', String(active));
-        // Merge needs ≥2 PDFs. Keep the button enabled but mark it aria-disabled
-        // (the click is gated); a CSS tooltip (data-tip) explains why on hover —
-        // native `title` tooltips don't show reliably on these.
-        if (b.dataset.op === 'merge') {
-          b.classList.toggle('seg__btn--disabled', v.mergeDisabled);
-          b.setAttribute('aria-disabled', String(v.mergeDisabled));
-          if (v.mergeDisabled) b.dataset.tip = 'Add at least one more PDF';
-          else delete b.dataset.tip;
-        }
-      }
-      syncPill(pdfopSeg);
-    }
-
     // PDF → DOCX is a best-effort text extraction; flag it (Beta) when chosen.
-    pdfopHintRow.style.display =
-      v.showPdfOps && v.pdfOperation === 'todocx' ? '' : 'none';
+    pdfopHintRow.style.display = v.showDocxHint ? '' : 'none';
 
     // Angle sub-control: only meaningful for the rotate operation.
-    const showRotate = v.showPdfOps && v.pdfOperation === 'rotate';
-    rotateRow.style.display = showRotate ? '' : 'none';
-    if (showRotate) {
+    rotateRow.style.display = v.showRotate ? '' : 'none';
+    if (v.showRotate) {
       for (const b of Array.from(rotateSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
         const active = Number(b.dataset.angle) === v.rotateAngle;
         b.classList.toggle('seg__btn--active', active);

@@ -2,6 +2,7 @@ import type { Job } from '@app/controller';
 import { inputCategory, type FormatId, type ProgressStage } from '@core/types';
 import { formatBytes } from '@shared/format';
 import { createFormatSelect } from './FormatSelect';
+import { createOperationSelect, type OperationOption } from './OperationSelect';
 import { createGroupSelect } from './GroupSelect';
 
 /** File-list section keys, in display order. `other` = unsupported inputs. */
@@ -15,6 +16,14 @@ const GROUP_LABEL: Record<Group, string> = {
 };
 
 const groupOf = (v: JobView): Group => inputCategory(v.job.input) ?? 'other';
+
+/** Colour family for the file-type bubble (PDF red, DOCX blue, audio amber,
+ *  everything else the accent violet). */
+function bubbleKind(input: Job['input']): string {
+  if (input.detectedFormat === 'pdf') return 'pdf';
+  if (input.detectedFormat === 'docx') return 'docx';
+  return inputCategory(input) === 'audio' ? 'audio' : 'image';
+}
 
 /** Re-append nodes into `container` in `desired` order, but only if the current
  *  DOM order differs (progress ticks fire a render per file — avoid churn). */
@@ -40,6 +49,10 @@ export interface JobView {
   job: Job;
   /** Output formats selectable for this file (empty if unsupported). */
   options: FormatId[];
+  /** Operation choices for a document file (empty for media). */
+  docOps?: ReadonlyArray<OperationOption>;
+  /** Current operation for a document file. */
+  docOp?: string;
   /** Resolved target format, or null if unsupported. */
   target: FormatId | null;
   /** True when this file's target is an aggregate (merge / images→PDF) → grouping. */
@@ -54,6 +67,8 @@ export interface FileListCallbacks {
   onRemove(id: string): void;
   onDownload(id: string): void;
   onFormat(id: string, format: FormatId): void;
+  /** Change a document file's operation (rotate / split / to text / …). */
+  onOperation(id: string, op: string): void;
   /** Download a single output file of a multi-output (split) job by index. */
   onDownloadOutput(id: string, index: number): void;
   onGroup(id: string, group: number): void;
@@ -176,7 +191,7 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   row.className = 'fileitem__row';
 
   const bubble = document.createElement('span');
-  bubble.className = 'fbubble';
+  bubble.className = `fbubble fbubble--${bubbleKind(view.job.input)}`;
   bubble.textContent = view.job.input.detectedFormat.slice(0, 4).toUpperCase();
 
   const info = document.createElement('div');
@@ -190,15 +205,20 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   meta.textContent = formatBytes(view.job.input.sizeBytes);
   info.append(name, meta);
 
-  // Target selector: "→ [FORMAT ▾]  [G1 ▾]"
+  // Target selector: "→ [FORMAT ▾]  [G1 ▾]" (media) or "→ [OPERATION ▾]" (docs).
   const convert = document.createElement('div');
   convert.className = 'fileitem__convert';
   const fmtSelect = view.options.length > 0 ? createFormatSelect((f) => cb.onFormat(id, f)) : null;
-  if (fmtSelect) {
+  const opSelect =
+    view.docOps && view.docOps.length > 0
+      ? createOperationSelect((op) => cb.onOperation(id, op))
+      : null;
+  const picker = fmtSelect?.el ?? opSelect?.el;
+  if (picker) {
     const arrow = document.createElement('span');
     arrow.className = 'fileitem__arrow';
     arrow.textContent = '→';
-    convert.append(arrow, fmtSelect.el);
+    convert.append(arrow, picker);
   }
   // Group selector (only shown for aggregate targets — merge / images→PDF).
   const groupSelect = createGroupSelect(
@@ -245,6 +265,7 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
 
   function update(v: JobView): void {
     if (fmtSelect && v.target) fmtSelect.update(v.target, v.options);
+    if (opSelect && v.docOp) opSelect.update(v.docOp, v.docOps ?? []);
     if (v.isAggregate && v.group != null) {
       groupSelect.el.hidden = false;
       groupSelect.update(v.group, v.groups ?? [v.group]);
@@ -289,6 +310,7 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
 
   function destroy(): void {
     fmtSelect?.destroy();
+    opSelect?.destroy();
     groupSelect.destroy();
   }
 

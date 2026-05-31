@@ -23,6 +23,36 @@ const CONCURRENCY = 4;
 /** Max files queued at once — keeps the list/DOM manageable. */
 const MAX_FILES = 200;
 
+/** Per-file operation choices for the document row dropdowns (id → label). */
+export const PDF_OPS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'rotate', label: 'Rotate' },
+  { id: 'split', label: 'Split pages' },
+  { id: 'merge', label: 'Merge' },
+  { id: 'tojpg', label: 'To JPG' },
+  { id: 'topng', label: 'To PNG' },
+  { id: 'totext', label: 'To text' },
+  { id: 'todocx', label: 'To DOCX' },
+];
+export const DOCX_OPS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'topdf', label: 'To PDF' },
+  { id: 'totext', label: 'To text' },
+  { id: 'tohtml', label: 'To HTML' },
+];
+
+/** Resolve a document operation to its output format. */
+function docTarget(input: InputFile, op: string): FormatId {
+  if (input.detectedFormat === 'docx') {
+    if (op === 'totext') return 'txt';
+    if (op === 'tohtml') return 'html';
+    return 'pdf';
+  }
+  if (op === 'tojpg') return 'jpeg';
+  if (op === 'topng') return 'png';
+  if (op === 'totext') return 'txt';
+  if (op === 'todocx') return 'docx';
+  return 'pdf'; // rotate / split / merge
+}
+
 export interface Job {
   input: InputFile;
   stage: ProgressStage;
@@ -31,6 +61,9 @@ export interface Job {
   error?: string;
   /** Per-file output override; falls back to the category's target format. */
   targetFormat?: FormatId;
+  /** Per-file document operation (rotate / split / to JPG / …). Falls back to the
+   *  category default in settings. */
+  docOp?: string;
   /** Aggregate group number (merge / images→PDF). Files sharing a group combine
    *  into one file. Undefined = group 1 (all-in-one default). */
   group?: number;
@@ -199,15 +232,41 @@ export class Controller {
   resolveTarget(job: Job): FormatId | null {
     const c = inputCategory(job.input);
     if (!c) return null;
-    // DOCX has its own operation picker (→ PDF / text / HTML), separate from the
-    // PDF op picker.
-    if (job.input.detectedFormat === 'docx') {
-      const op = this.state.settings.docxOperation;
-      if (op === 'totext') return 'txt';
-      if (op === 'tohtml') return 'html';
-      return 'pdf';
-    }
+    // Documents are driven by a per-file operation (→ PDF / image / text / …).
+    if (c === 'document') return docTarget(job.input, this.docOperation(job));
     return job.targetFormat ?? this.targetFormat(c);
+  }
+
+  /** The operation for a document job: its per-file override, else the category
+   *  default from settings (pdf → rotate, docx → to PDF). */
+  docOperation(job: Job): string {
+    if (job.docOp) return job.docOp;
+    return job.input.detectedFormat === 'docx'
+      ? this.state.settings.docxOperation
+      : this.state.settings.pdfOperation;
+  }
+
+  /** Operation choices for a document row's per-file dropdown ([] for non-docs). */
+  docOperationsFor(job: Job): ReadonlyArray<{ id: string; label: string }> {
+    if (job.input.detectedFormat === 'docx') return DOCX_OPS;
+    if (job.input.detectedFormat === 'pdf') return PDF_OPS;
+    return [];
+  }
+
+  /** Set a document job's operation; drops its output + any aggregate it joined. */
+  setJobOperation(id: string, op: string): void {
+    const job = this.state.jobs.find((j) => j.input.id === id);
+    if (!job) return;
+    this.dropAggregates(this.categoriesOf([job.input]));
+    this.state = {
+      ...this.state,
+      jobs: this.state.jobs.map((j) =>
+        j.input.id === id
+          ? { ...j, docOp: op, outputs: undefined, error: undefined, aggregated: false, stage: 'queued' }
+          : j,
+      ),
+    };
+    this.emit();
   }
 
   /** Set a per-file output format override. */
@@ -340,8 +399,8 @@ export class Controller {
       outputFormat: this.resolveTarget(job) as FormatId,
       quality: this.state.settings.quality,
       resize: this.state.settings.resize,
-      // PDF-only; ignored by image/audio tools. operation selects rotate/split/merge.
-      operation: this.state.settings.pdfOperation,
+      // Document-only; ignored by image/audio tools. Selects rotate/split/merge/…
+      operation: this.docOperation(job),
       rotateAngle: this.state.settings.pdfRotateAngle,
       scale: this.state.settings.pdfImageScale,
       docxMode: this.state.settings.docxMode,
@@ -352,7 +411,7 @@ export class Controller {
   private toolFor(job: Job): Tool | undefined {
     const target = this.resolveTarget(job);
     if (!target) return undefined;
-    return this.registry.resolve(job.input, target, this.state.settings.pdfOperation);
+    return this.registry.resolve(job.input, target, this.docOperation(job));
   }
 
   /** Aggregate group of a job (default 1 = all-in-one). */
