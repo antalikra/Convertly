@@ -2,6 +2,9 @@ import type { FormatId } from '@core/types';
 
 export type ThemeMode = 'dark' | 'light';
 
+/** Image resize mode. percent = scale by the slider; maxside = cap longest side. */
+export type ResizeMode = 'percent' | 'maxside';
+
 /** Operation chosen for PDF inputs (the document card's picker). */
 export type PdfOperation =
   | 'rotate'
@@ -24,8 +27,12 @@ export interface Settings {
   /** Target format for audio inputs. */
   audioFormat: FormatId;
   quality: number; // 0..1
-  /** Scale factor for image output (0.25..1); 1 = original size. */
+  /** Scale factor for image output (0.25..1); 1 = original size (percent mode). */
   resize: number;
+  /** Resize mode: scale by percent, or cap the longest side to a px preset. */
+  resizeMode: ResizeMode;
+  /** Longest-side cap (px) used in 'maxside' mode. */
+  resizeMaxPx: number;
   /** Operation applied to PDF inputs. */
   pdfOperation: PdfOperation;
   /** Clockwise rotation for the PDF rotate operation (degrees, multiple of 90). */
@@ -44,6 +51,8 @@ export const DEFAULT_SETTINGS: Settings = {
   audioFormat: 'mp3',
   quality: 1, // max quality by default (png = lossless)
   resize: 1,
+  resizeMode: 'percent',
+  resizeMaxPx: 1920,
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,

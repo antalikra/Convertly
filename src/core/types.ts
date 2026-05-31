@@ -46,6 +46,9 @@ export const ROTATE_ANGLES: readonly number[] = [90, 180, 270];
 /** PDF → image render scales (× base resolution). Bigger = sharper but heavier. */
 export const PDF_SCALES: readonly number[] = [1, 1.5, 2];
 
+/** Max-longest-side presets (px) for the "Max side" resize mode (downscale only). */
+export const RESIZE_MAX: readonly number[] = [640, 1280, 1920, 2560, 4096];
+
 /** Formats whose quality slider matters. png is here because UPNG uses quality
  *  as a palette-quantisation level (1 = lossless, lower = fewer colours/smaller). */
 export const LOSSY_FORMATS: readonly FormatId[] = ['jpeg', 'webp', 'avif', 'png', 'mp3'];
@@ -83,6 +86,8 @@ export interface ToolOptions {
   outputFormat: FormatId;
   quality?: number; // 0..1 for jpeg/webp
   resize?: number; // 0..1 scale factor for image output; 1 = original
+  resizeMode?: string; // 'percent' (use resize) | 'maxside' (use resizeMaxPx)
+  resizeMaxPx?: number; // longest-side cap in px for 'maxside' mode
   rotateAngle?: number; // PDF rotate: clockwise degrees (multiple of 90)
   scale?: number; // PDF → image render scale (× base resolution)
   docxMode?: string; // DOCX → PDF: 'raster' | 'reflow'

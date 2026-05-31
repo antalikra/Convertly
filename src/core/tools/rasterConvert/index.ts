@@ -30,7 +30,7 @@ export const rasterConvertTool: Tool = {
         bitmap = await createImageBitmap(input.file);
 
         onProgress?.({ inputId: input.id, stage: 'encoding' });
-        const blob = await encodeBlob(bitmap, options.outputFormat, options.quality, options.resize);
+        const blob = await encodeBlob(bitmap, options.outputFormat, options.quality, options.resize, options.resizeMode, options.resizeMaxPx);
 
         results.push({
           blob,

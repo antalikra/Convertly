@@ -20,8 +20,17 @@ export async function encodeBlob(
   format: FormatId,
   quality: number = DEFAULT_QUALITY,
   resize = 1,
+  resizeMode = 'percent',
+  resizeMaxPx = 0,
 ): Promise<Blob> {
-  const scale = resize > 0 && resize < 1 ? resize : 1;
+  let scale = 1;
+  if (resizeMode === 'maxside' && resizeMaxPx > 0) {
+    // Cap the longest side; never upscale.
+    const longest = Math.max(bitmap.width, bitmap.height);
+    if (longest > resizeMaxPx) scale = resizeMaxPx / longest;
+  } else if (resize > 0 && resize < 1) {
+    scale = resize;
+  }
   const w = Math.max(1, Math.round(bitmap.width * scale));
   const h = Math.max(1, Math.round(bitmap.height * scale));
 

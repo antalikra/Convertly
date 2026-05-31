@@ -400,6 +400,8 @@ export class Controller {
       outputFormat: this.resolveTarget(job) as FormatId,
       quality: this.state.settings.quality,
       resize: this.state.settings.resize,
+      resizeMode: this.state.settings.resizeMode,
+      resizeMaxPx: this.state.settings.resizeMaxPx,
       // Document-only; ignored by image/audio tools. Selects rotate/split/merge/…
       operation: this.docOperation(job),
       rotateAngle: this.state.settings.pdfRotateAngle,

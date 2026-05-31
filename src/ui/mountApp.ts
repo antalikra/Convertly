@@ -140,6 +140,9 @@ export function mountApp(root: HTMLElement): Controller {
       ),
     onQuality: (quality) => void controller.updateSettings({ quality }),
     onResize: (resize) => void controller.updateSettings({ resize }),
+    onResizeMode: (mode) =>
+      void controller.updateSettings({ resizeMode: mode as 'percent' | 'maxside' }),
+    onResizeMax: (resizeMaxPx) => void controller.updateSettings({ resizeMaxPx }),
     onOperation: (op) =>
       void controller.updateSettings({
         pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx',
@@ -291,6 +294,8 @@ export function mountApp(root: HTMLElement): Controller {
       resize: state.settings.resize,
       // Resize applies to raster output, not the images→PDF combine.
       showResize: imageRow != null && imageRow.selected !== 'pdf',
+      resizeMode: state.settings.resizeMode,
+      resizeMaxPx: state.settings.resizeMaxPx,
       // Global presets: shown whenever that kind of document is present.
       showPdfOps: onDocsTab && pdfJobs.length > 0,
       pdfOperation: state.settings.pdfOperation,
