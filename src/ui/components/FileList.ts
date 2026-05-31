@@ -17,6 +17,11 @@ const GROUP_LABEL: Record<Group, string> = {
 
 const groupOf = (v: JobView): Group => inputCategory(v.job.input) ?? 'other';
 
+/** "M:SS" from seconds. */
+function fmtDuration(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
+}
+
 /** Colour family for the file-type bubble (PDF red, DOCX blue, audio amber,
  *  everything else the accent violet). */
 function bubbleKind(input: Job['input']): string {
@@ -378,6 +383,7 @@ function createRow(
     } else {
       meta.textContent = formatBytes(orig);
     }
+    if (v.job.input.durationSec) meta.textContent += ` · ${fmtDuration(v.job.input.durationSec)}`;
     dl.hidden = !(outs && outs.length > 0);
     dl.title = multi ? 'Download ZIP' : 'Download';
 

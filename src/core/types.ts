@@ -75,6 +75,8 @@ export interface InputFile {
   name: string;
   sizeBytes: number;
   detectedFormat: FormatId | 'unknown';
+  /** Duration in seconds for audio inputs (read from metadata on add). */
+  durationSec?: number;
 }
 
 export interface OutputFile {

@@ -319,6 +319,12 @@ export function mountApp(root: HTMLElement): Controller {
       audioNormalize: state.settings.audioNormalize,
       showAudioBitrate: activeTab === 'media' && audioRow?.selected === 'mp3',
       audioBitrate: state.settings.audioBitrate,
+      audioMaxDuration: Math.max(
+        0,
+        ...state.jobs
+          .filter((j) => inputCategory(j.input) === 'audio')
+          .map((j) => j.input.durationSec ?? 0),
+      ),
       // Global presets: shown whenever that kind of document is present.
       showPdfOps: onDocsTab && pdfJobs.length > 0,
       pdfOperation: state.settings.pdfOperation,

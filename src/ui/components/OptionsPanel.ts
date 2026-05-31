@@ -41,6 +41,8 @@ export interface OptionsView {
   /** MP3 bitrate seg — shown when the audio target is MP3. */
   showAudioBitrate: boolean;
   audioBitrate: number;
+  /** Longest audio duration (s) among inputs — caps the trim inputs. */
+  audioMaxDuration: number;
   /** Global PDF operation preset (applies to all PDFs without a per-file override). */
   showPdfOps: boolean;
   pdfOperation: string;
@@ -351,8 +353,10 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
   pagerangeInput.addEventListener('input', () => h.onPageRange(pagerangeInput.value));
-  trimStart.addEventListener('input', () => h.onTrimStart(Number(trimStart.value) || 0));
-  trimEnd.addEventListener('input', () => h.onTrimEnd(Number(trimEnd.value) || 0));
+  let audioMax = 0; // longest input duration; clamps the trim values
+  const clampSec = (n: number) => (audioMax > 0 ? Math.min(Math.max(0, n), audioMax) : Math.max(0, n));
+  trimStart.addEventListener('input', () => h.onTrimStart(clampSec(Number(trimStart.value) || 0)));
+  trimEnd.addEventListener('input', () => h.onTrimEnd(clampSec(Number(trimEnd.value) || 0)));
   for (const b of Array.from(audiochSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onAudioMono(b.dataset.audioch === 'mono'));
   }
@@ -483,6 +487,16 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     if (v.showAudio) {
       if (document.activeElement !== trimStart) trimStart.value = v.trimStart ? String(v.trimStart) : '';
       if (document.activeElement !== trimEnd) trimEnd.value = v.trimEnd ? String(v.trimEnd) : '';
+      audioMax = v.audioMaxDuration || 0;
+      if (audioMax > 0) {
+        trimStart.max = String(Math.ceil(audioMax));
+        trimEnd.max = String(Math.ceil(audioMax));
+        trimEnd.placeholder = `end ≤ ${Math.floor(audioMax)}`;
+      } else {
+        trimStart.removeAttribute('max');
+        trimEnd.removeAttribute('max');
+        trimEnd.placeholder = 'end';
+      }
       for (const b of Array.from(audiochSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
         const active = (b.dataset.audioch === 'mono') === v.audioMono;
         b.classList.toggle('seg__btn--active', active);

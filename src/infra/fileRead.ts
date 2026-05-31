@@ -1,4 +1,24 @@
-import type { FormatId, InputFile } from '@core/types';
+import { formatCategory, type FormatId, type InputFile } from '@core/types';
+
+/** Read an audio file's duration (seconds) from metadata — cheap, no full decode. */
+function audioDuration(file: File): Promise<number | undefined> {
+  // No <audio> outside a browser (e.g. tests) — skip silently.
+  if (typeof Audio === 'undefined' || typeof URL?.createObjectURL !== 'function') {
+    return Promise.resolve(undefined);
+  }
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio();
+    const done = (d?: number) => {
+      URL.revokeObjectURL(url);
+      resolve(d);
+    };
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => done(Number.isFinite(audio.duration) ? audio.duration : undefined);
+    audio.onerror = () => done(undefined);
+    audio.src = url;
+  });
+}
 
 let counter = 0;
 function nextId(): string {
@@ -83,11 +103,14 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
 }
 
 export async function toInputFile(file: File): Promise<InputFile> {
+  const detectedFormat = await detectFormat(file);
+  const isAudio = detectedFormat !== 'unknown' && formatCategory(detectedFormat) === 'audio';
   return {
     id: nextId(),
     file,
     name: file.name,
     sizeBytes: file.size,
-    detectedFormat: await detectFormat(file),
+    detectedFormat,
+    durationSec: isAudio ? await audioDuration(file) : undefined,
   };
 }
