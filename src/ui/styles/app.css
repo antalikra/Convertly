@@ -326,8 +326,10 @@ body.is-empty .dropzone { flex: 1 1 auto; }
    horizontally (no wrap → the sliding pill stays correct) instead of cramming. */
 [data-pdfop-row] .group__label { flex: 0 0 auto; }
 [data-pdfop-seg] {
-  flex: 1 1 auto;
+  flex: 0 1 auto;       /* hug the buttons (no trailing empty), shrink if needed */
   min-width: 0;
+  max-width: 100%;
+  margin-left: auto;    /* right-align like the other control bars */
   overflow-x: auto;
   scrollbar-width: none;
 }
