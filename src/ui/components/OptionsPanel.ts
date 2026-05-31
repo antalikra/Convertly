@@ -1,4 +1,4 @@
-import { type Category, type FormatId } from '@core/types';
+import { ROTATE_ANGLES, PDF_SCALES, type Category, type FormatId } from '@core/types';
 
 const LABEL: Record<string, string> = {
   jpeg: 'JPG',
@@ -9,11 +9,13 @@ const LABEL: Record<string, string> = {
   bmp: 'BMP',
   wav: 'WAV',
   mp3: 'MP3',
+  pdf: 'PDF',
 };
 
 const CAT_LABEL: Record<Category, string> = {
   image: 'Image format',
   audio: 'Audio format',
+  document: 'PDF', // document rows aren't rendered as a format seg (PDF uses the rotate control)
 };
 
 export interface FormatRow {
@@ -28,12 +30,27 @@ export interface OptionsView {
   showQuality: boolean;
   resize: number;
   showResize: boolean;
+  /** PDF operation picker (Rotate / Split): shown when a PDF input is present. */
+  showPdfOps: boolean;
+  pdfOperation: string; // 'rotate' | 'split' | 'merge'
+  /** Disable Merge when there's nothing to merge (< 2 PDFs). */
+  mergeDisabled: boolean;
+  rotateAngle: number; // angle sub-control shown only when operation is 'rotate'
+  /** Combine presets (All in one / Each separate) — shown for aggregate targets. */
+  showCombine: boolean;
+  /** Render-scale seg — shown for PDF → image operations. */
+  showScale: boolean;
+  pdfScale: number;
 }
 
 export interface OptionsHandlers {
   onFormat(category: Category, format: FormatId): void;
   onQuality(quality: number): void;
   onResize(resize: number): void;
+  onOperation(operation: string): void;
+  onRotate(angle: number): void;
+  onCombine(mode: 'one' | 'separate'): void;
+  onScale(scale: number): void;
 }
 
 export interface OptionsPanelHandle {
@@ -57,6 +74,45 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       <input id="resize" type="range" min="0.25" max="1" step="0.05" aria-label="Resize" />
       <span class="quality-val" data-resize-val></span>
     </div>
+    <div class="group__row" data-pdfop-row>
+      <span class="group__label">PDF</span>
+      <div class="seg" data-pdfop-seg role="radiogroup" aria-label="PDF operation">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-op="rotate">Rotate</button>
+        <button type="button" class="seg__btn" role="radio" data-op="split">Split pages</button>
+        <button type="button" class="seg__btn" role="radio" data-op="merge">Merge</button>
+        <button type="button" class="seg__btn" role="radio" data-op="tojpg">To JPG</button>
+        <button type="button" class="seg__btn" role="radio" data-op="topng">To PNG</button>
+        <button type="button" class="seg__btn" role="radio" data-op="totext">To text</button>
+      </div>
+    </div>
+    <div class="group__row" data-rotate-row>
+      <span class="group__label">Rotation</span>
+      <div class="seg" data-rotate-seg role="radiogroup" aria-label="PDF rotation">
+        <span class="seg__pill no-anim"></span>
+        ${ROTATE_ANGLES.map(
+          (a) =>
+            `<button type="button" class="seg__btn" role="radio" data-angle="${a}">${a}°</button>`,
+        ).join('')}
+      </div>
+    </div>
+    <div class="group__row" data-combine-row>
+      <span class="group__label">Combine</span>
+      <div class="combine">
+        <button type="button" class="btn btn--sm" data-combine="one">All in one</button>
+        <button type="button" class="btn btn--sm" data-combine="separate">Each separate</button>
+      </div>
+    </div>
+    <div class="group__row" data-scale-row>
+      <span class="group__label">Resolution</span>
+      <div class="seg" data-scale-seg role="radiogroup" aria-label="PDF render scale">
+        <span class="seg__pill no-anim"></span>
+        ${PDF_SCALES.map(
+          (s) =>
+            `<button type="button" class="seg__btn" role="radio" data-scale="${s}">${s}×</button>`,
+        ).join('')}
+      </div>
+    </div>
   `;
 
   const formats = el.querySelector<HTMLElement>('[data-formats]')!;
@@ -66,14 +122,38 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const resize = el.querySelector<HTMLInputElement>('#resize')!;
   const resizeVal = el.querySelector<HTMLSpanElement>('[data-resize-val]')!;
   const resizeRow = el.querySelector<HTMLElement>('[data-resize-row]')!;
+  const rotateRow = el.querySelector<HTMLElement>('[data-rotate-row]')!;
+  const rotateSeg = el.querySelector<HTMLElement>('[data-rotate-seg]')!;
+  const pdfopRow = el.querySelector<HTMLElement>('[data-pdfop-row]')!;
+  const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
+  const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
+  const scaleRow = el.querySelector<HTMLElement>('[data-scale-row]')!;
+  const scaleSeg = el.querySelector<HTMLElement>('[data-scale-seg]')!;
 
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
+  for (const b of Array.from(rotateSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onRotate(Number(b.dataset.angle)));
+  }
+  for (const b of Array.from(pdfopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => {
+      // Keep the button enabled (so its title tooltip shows on hover) and gate here.
+      if (b.getAttribute('aria-disabled') === 'true') return;
+      h.onOperation(String(b.dataset.op));
+    });
+  }
+  for (const b of Array.from(combineRow.querySelectorAll<HTMLButtonElement>('[data-combine]'))) {
+    b.addEventListener('click', () => h.onCombine(b.dataset.combine as 'one' | 'separate'));
+  }
+  for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onScale(Number(b.dataset.scale)));
+  }
 
   let renderedSig = '';
 
   function update(v: OptionsView): void {
-    if (v.rows.length === 0) {
+    // Panel is also relevant when only PDFs are present (op picker, no format rows).
+    if (v.rows.length === 0 && !v.showPdfOps) {
       el.hidden = true;
       return;
     }
@@ -105,6 +185,51 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     resizeRow.style.display = v.showResize ? '' : 'none';
     resize.value = String(v.resize);
     resizeVal.textContent = v.resize >= 1 ? 'Original' : `${Math.round(v.resize * 100)}%`;
+
+    combineRow.style.display = v.showCombine ? '' : 'none';
+
+    // PDF → image render scale.
+    scaleRow.style.display = v.showScale ? '' : 'none';
+    if (v.showScale) {
+      for (const b of Array.from(scaleSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = Number(b.dataset.scale) === v.pdfScale;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(scaleSeg);
+    }
+
+    // PDF operation picker (Rotate / Split).
+    pdfopRow.style.display = v.showPdfOps ? '' : 'none';
+    if (v.showPdfOps) {
+      for (const b of Array.from(pdfopSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.op === v.pdfOperation;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+        // Merge needs ≥2 PDFs. Keep the button enabled but mark it aria-disabled
+        // (the click is gated); a CSS tooltip (data-tip) explains why on hover —
+        // native `title` tooltips don't show reliably on these.
+        if (b.dataset.op === 'merge') {
+          b.classList.toggle('seg__btn--disabled', v.mergeDisabled);
+          b.setAttribute('aria-disabled', String(v.mergeDisabled));
+          if (v.mergeDisabled) b.dataset.tip = 'Add at least one more PDF';
+          else delete b.dataset.tip;
+        }
+      }
+      syncPill(pdfopSeg);
+    }
+
+    // Angle sub-control: only meaningful for the rotate operation.
+    const showRotate = v.showPdfOps && v.pdfOperation === 'rotate';
+    rotateRow.style.display = showRotate ? '' : 'none';
+    if (showRotate) {
+      for (const b of Array.from(rotateSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = Number(b.dataset.angle) === v.rotateAngle;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(rotateSeg);
+    }
   }
 
   return { el, update };

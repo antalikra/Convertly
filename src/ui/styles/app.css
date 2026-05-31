@@ -148,7 +148,8 @@ body.is-tab .shell {
   box-shadow: var(--shadow-overlay);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  animation: ddIn 140ms var(--ease-emphasis);
+  transform-origin: top right;
+  animation: ddIn 170ms var(--ease-spring);
 }
 .support.is-open .support__menu { display: flex; }
 .support__title {
@@ -307,6 +308,13 @@ body.is-empty .dropzone { flex: 1 1 auto; }
   position: relative;
   z-index: 1;
   flex: 1;
+  box-sizing: border-box;
+  /* Centre + a shared min-height so every segmented bar (operation vs angle vs
+     format) lines up to the same height regardless of label length. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
   padding: 8px 14px;
   border: none;
   border-radius: calc(var(--r-tile) - 4px);
@@ -314,11 +322,50 @@ body.is-empty .dropzone { flex: 1 1 auto; }
   color: var(--text-secondary);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
+  white-space: nowrap;
   cursor: pointer;
   transition: color var(--dur-base) var(--ease-emphasis);
 }
 .seg__btn:hover { color: var(--text-primary); }
 .seg__btn--active { color: #fff; }
+.seg__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Dim via colour (not opacity) so the hover tooltip below stays fully opaque
+   — element opacity would composite the ::after too. */
+.seg__btn--disabled { color: var(--text-tertiary); cursor: not-allowed; }
+.seg__btn--disabled:hover { color: var(--text-tertiary); }
+
+/* Hover tooltip for a gated seg button (e.g. why Merge is disabled). Pops in. */
+.seg__btn[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  /* translateX(-50%) is kept through the keyframes so centring isn't lost. */
+  transform: translateX(-50%);
+  transform-origin: bottom center;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surface-overlay-strong);
+  border: 1px solid var(--border-overlay);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  opacity: 1;
+  z-index: 70;
+  pointer-events: none;
+  animation: tipPop 160ms var(--ease-spring);
+}
+@keyframes tipPop {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.92); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* ---- Top-level tabs (Media / PDF) — a centred, slightly larger segmented bar ---- */
+.tabs { display: flex; justify-content: center; }
+.seg--tabs { min-width: 240px; }
+.seg--tabs .seg__btn { padding: 9px 22px; font-size: var(--fs-body); }
 
 /* ---- Quality range (native input, accent-tinted; mockup slider-pill is display-only) ---- */
 input[type="range"] {
@@ -366,13 +413,65 @@ input[type="range"] {
 .filelist-wrap { display: flex; flex-direction: column; gap: 14px; }
 .filelist { display: flex; flex-direction: column; }
 .fileitem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 10px 4px;
   border-top: 1px solid var(--border-subtle);
 }
 .fileitem:first-child { border-top: none; }
+.fileitem__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Expander caret (multi-output / split jobs) */
+.fileitem__expand svg { transition: transform var(--dur-fast) var(--ease-emphasis); }
+.fileitem__expand.is-open svg { transform: rotate(90deg); }
+
+/* Per-file list revealed under a split job */
+.fileitem__sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 8px 0 2px 40px;
+  max-height: 320px;
+  overflow-y: auto;
+  /* Firefox: thin themed scrollbar (WebKit rules below cover Chrome). */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-toggle-off) transparent;
+}
+.fileitem__sublist::-webkit-scrollbar { width: 16px; }
+.fileitem__sublist::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.fileitem__sublist::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+.suboutput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.suboutput:hover { background: var(--surface-hover); }
+.suboutput__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suboutput__size {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.suboutput .btn--icon { width: 28px; height: 28px; }
+.suboutput .btn--icon svg { width: 14px; height: 14px; }
 
 /* Smooth entry when a new file is added (does not replay on re-render). */
 @keyframes rowIn {
@@ -428,12 +527,26 @@ input[type="range"] {
   box-shadow: var(--shadow-overlay);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  animation: ddIn 140ms var(--ease-emphasis);
+  transform-origin: top right; /* grow out of the trigger */
+  animation: ddIn 170ms var(--ease-spring);
 }
 .fmt-select.is-open .fmt-select__menu { display: flex; }
-.fmt-select__menu--up { top: auto; bottom: calc(100% + 6px); }
+.fmt-select__menu--up { top: auto; bottom: calc(100% + 6px); transform-origin: bottom right; }
+
+/* Group selector (aggregate grouping) + its "New group" option */
+.grp-select .fmt-select__trigger { min-width: 48px; }
+.fmt-select__opt--new {
+  margin-top: 2px;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0 0 9px 9px;
+  color: var(--accent);
+}
+
+/* Combine presets (All in one / Each separate) */
+.combine { display: flex; gap: 8px; }
+/* Dropdown / popover reveal — pops in from the trigger (scale + slide). */
 @keyframes ddIn {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
   to { opacity: 1; transform: none; }
 }
 .fmt-select__opt {

@@ -1,8 +1,17 @@
 // Dumb presentation component: renders a drop area + file picker and emits the
 // picked File[] via the onFiles callback. It knows nothing about conversion.
 
+export interface DropzoneView {
+  title: string;
+  sub: string;
+  /** `accept` attribute for the file picker (drag-drop is unrestricted). */
+  accept: string;
+}
+
 export interface DropzoneHandle {
   el: HTMLElement;
+  /** Retarget the hint + picker filter (per active tab). */
+  update(view: DropzoneView): void;
 }
 
 export function createDropzone(onFiles: (files: File[]) => void): DropzoneHandle {
@@ -11,15 +20,23 @@ export function createDropzone(onFiles: (files: File[]) => void): DropzoneHandle
   el.tabIndex = 0;
   el.setAttribute('role', 'button');
   el.innerHTML = `
-    <input type="file" accept="image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.m4a,.flac" multiple hidden />
+    <input type="file" multiple hidden />
     <span class="dropzone__icon" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
     </span>
-    <span class="dropzone__title">Drop files here</span>
-    <span class="dropzone__sub">Images: HEIC, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF · Audio: MP3, WAV, FLAC, M4A, AAC, OGG</span>
+    <span class="dropzone__title" data-title>Drop files here</span>
+    <span class="dropzone__sub" data-sub></span>
   `;
 
   const picker = el.querySelector<HTMLInputElement>('input')!;
+  const titleEl = el.querySelector<HTMLElement>('[data-title]')!;
+  const subEl = el.querySelector<HTMLElement>('[data-sub]')!;
+
+  function update(view: DropzoneView): void {
+    titleEl.textContent = view.title;
+    subEl.textContent = view.sub;
+    picker.accept = view.accept;
+  }
 
   // <label> opens the picker natively on mouse click; only wire the keyboard.
   el.addEventListener('keydown', (e) => {
@@ -59,5 +76,5 @@ export function createDropzone(onFiles: (files: File[]) => void): DropzoneHandle
     if (files && files.length) onFiles(Array.from(files));
   });
 
-  return { el };
+  return { el, update };
 }

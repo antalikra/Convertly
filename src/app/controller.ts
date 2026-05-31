@@ -9,6 +9,8 @@ import {
   type OutputFile,
   type ProgressEvent,
   type ProgressStage,
+  type Tool,
+  type ToolOptions,
 } from '@core/types';
 import { toInputFile } from '@infra/fileRead';
 import { downloadBlob, downloadZip } from '@infra/download';
@@ -24,14 +26,35 @@ const MAX_FILES = 200;
 export interface Job {
   input: InputFile;
   stage: ProgressStage;
-  output?: OutputFile;
+  /** Files produced. Usually one (1→1); many for 1→N tools like PDF split. */
+  outputs?: OutputFile[];
   error?: string;
   /** Per-file output override; falls back to the category's target format. */
   targetFormat?: FormatId;
+  /** Aggregate group number (merge / images→PDF). Files sharing a group combine
+   *  into one file. Undefined = group 1 (all-in-one default). */
+  group?: number;
+  /** True when this input was folded into an aggregate result (merge / images→PDF)
+   *  instead of producing its own file. Keeps it out of `pendingJobs`. */
+  aggregated?: boolean;
+}
+
+/** A single combined file produced by an aggregate tool from many inputs. */
+export interface AggregateResult {
+  /** Stable per tool+group (e.g. 'agg-pdf-merge-1') so a re-run replaces it. */
+  id: string;
+  category: Category;
+  /** Group number this result was built from. */
+  group: number;
+  output: OutputFile;
+  /** How many inputs were combined. */
+  sourceCount: number;
 }
 
 export interface AppState {
   jobs: Job[];
+  /** Combined files from aggregate tools (merge / images→PDF), shown as result rows. */
+  aggregates: AggregateResult[];
   settings: Settings;
   converting: boolean;
   /** True while a running batch is paused (no new files start; in-flight finishes). */
@@ -62,6 +85,7 @@ export class Controller {
 
   private state: AppState = {
     jobs: [],
+    aggregates: [],
     settings: { ...DEFAULT_SETTINGS },
     converting: false,
     paused: false,
@@ -95,19 +119,25 @@ export class Controller {
 
     const inputs = await Promise.all(accepted.map(toInputFile));
     const jobs: Job[] = inputs.map((input) => ({ input, stage: 'queued' }));
+    // New files change what an aggregate would combine — but only for THEIR
+    // category (adding an image must not reset a PDF merge).
+    this.dropAggregates(this.categoriesOf(inputs));
     this.state = { ...this.state, jobs: [...this.state.jobs, ...jobs], notice };
     this.ensureValidOutput();
     this.emit();
   }
 
   removeJob(id: string): void {
+    // Removing a file changes its category's aggregate (one fewer page to combine).
+    const removed = this.state.jobs.find((j) => j.input.id === id);
+    if (removed) this.dropAggregates(this.categoriesOf([removed.input]));
     this.state = { ...this.state, jobs: this.state.jobs.filter((j) => j.input.id !== id) };
     this.ensureValidOutput();
     this.emit();
   }
 
   clear(): void {
-    this.state = { ...this.state, jobs: [], notice: undefined };
+    this.state = { ...this.state, jobs: [], aggregates: [], notice: undefined };
     this.emit();
   }
 
@@ -149,8 +179,16 @@ export class Controller {
     return OUTPUT_ORDER.filter((f) => reachable.has(f));
   }
 
-  /** The chosen target format for a category. */
+  /** The chosen target format for a category. For documents the PDF operation
+   *  decides the output: rotate/split/merge stay PDF, "to JPG/PNG" rasterise. */
   targetFormat(category: Category): FormatId {
+    if (category === 'document') {
+      const op = this.state.settings.pdfOperation;
+      if (op === 'tojpg') return 'jpeg';
+      if (op === 'topng') return 'png';
+      if (op === 'totext') return 'txt';
+      return 'pdf';
+    }
     return category === 'audio'
       ? this.state.settings.audioFormat
       : this.state.settings.imageFormat;
@@ -165,6 +203,9 @@ export class Controller {
 
   /** Set a per-file output format override. */
   setJobFormat(id: string, format: FormatId): void {
+    // Changing a target can move a file in/out of its category's aggregate.
+    const job = this.state.jobs.find((j) => j.input.id === id);
+    if (job) this.dropAggregates(this.categoriesOf([job.input]));
     this.state = {
       ...this.state,
       jobs: this.state.jobs.map((j) => (j.input.id === id ? { ...j, targetFormat: format } : j)),
@@ -172,10 +213,46 @@ export class Controller {
     this.emit();
   }
 
+  /** Drop aggregate results and clear the `aggregated` flag on member jobs for the
+   *  given categories (all categories when omitted). Called when the selection or
+   *  a target/operation changes — the prior combined file no longer reflects the
+   *  current inputs. Scoped by category so e.g. adding an image doesn't reset a PDF
+   *  merge. */
+  /** Distinct categories present among the given inputs. */
+  private categoriesOf(inputs: InputFile[]): Set<Category> {
+    const set = new Set<Category>();
+    for (const i of inputs) {
+      const c = inputCategory(i);
+      if (c) set.add(c);
+    }
+    return set;
+  }
+
+  private dropAggregates(categories?: ReadonlySet<Category>): void {
+    const hits = (c: Category) => categories === undefined || categories.has(c);
+    const jobHit = (j: Job) => {
+      const c = inputCategory(j.input);
+      return c != null && hits(c);
+    };
+    const hadResults = this.state.aggregates.some((a) => hits(a.category));
+    const hadFlags = this.state.jobs.some((j) => j.aggregated && jobHit(j));
+    if (!hadResults && !hadFlags) return;
+    this.state = {
+      ...this.state,
+      aggregates: this.state.aggregates.filter((a) => !hits(a.category)),
+      jobs: this.state.jobs.map((j) =>
+        j.aggregated && jobHit(j)
+          ? { ...j, aggregated: false, stage: j.outputs?.length ? 'done' : 'queued' }
+          : j,
+      ),
+    };
+  }
+
   /** If a category's chosen output is no longer valid for its inputs, fix it. */
   private ensureValidOutput(): void {
     let settings = this.state.settings;
     for (const cat of this.categoriesPresent()) {
+      if (cat === 'document') continue; // PDF target is fixed ('pdf'), nothing to reconcile
       const available = this.availableOutputFormats(cat);
       const key = cat === 'audio' ? 'audioFormat' : 'imageFormat';
       if (available.length > 0 && !available.includes(settings[key])) {
@@ -186,7 +263,45 @@ export class Controller {
   }
 
   async updateSettings(patch: Partial<Settings>): Promise<void> {
-    this.state = { ...this.state, settings: { ...this.state.settings, ...patch } };
+    const prev = this.state.settings;
+    let jobs = this.state.jobs;
+    let aggregates = this.state.aggregates;
+
+    // The PDF operation + rotate angle aren't part of the output *format*, so
+    // isUpToDate() can't see them change. Re-running needs an explicit
+    // invalidate: drop the outputs of document jobs so they become pending again
+    // (like a format swap does for images via resolveTarget).
+    const pdfChanged =
+      (patch.pdfOperation !== undefined && patch.pdfOperation !== prev.pdfOperation) ||
+      (patch.pdfRotateAngle !== undefined && patch.pdfRotateAngle !== prev.pdfRotateAngle) ||
+      (patch.pdfImageScale !== undefined && patch.pdfImageScale !== prev.pdfImageScale);
+    if (pdfChanged) {
+      jobs = jobs.map((j) =>
+        inputCategory(j.input) === 'document' && (j.outputs?.length || j.error)
+          ? { ...j, outputs: undefined, error: undefined, stage: 'queued' }
+          : j,
+      );
+    }
+
+    // A changed operation (e.g. → merge) or image target (→ PDF) changes whether
+    // files aggregate, so the affected category's prior result is stale: clear it
+    // and the per-job `aggregated` flag — scoped so a PDF op change doesn't drop an
+    // image result and vice-versa.
+    const imageChanged = patch.imageFormat !== undefined && patch.imageFormat !== prev.imageFormat;
+    const affected = new Set<Category>();
+    if (pdfChanged) affected.add('document');
+    if (imageChanged) affected.add('image');
+    if (affected.size > 0) {
+      aggregates = aggregates.filter((a) => !affected.has(a.category));
+      jobs = jobs.map((j) => {
+        const c = inputCategory(j.input);
+        return j.aggregated && c != null && affected.has(c)
+          ? { ...j, aggregated: false, stage: j.outputs?.length ? 'done' : 'queued' }
+          : j;
+      });
+    }
+
+    this.state = { ...this.state, settings: { ...prev, ...patch }, jobs, aggregates };
     this.emit();
     await saveSettings(this.state.settings);
   }
@@ -200,9 +315,96 @@ export class Controller {
   }
 
   /** A job is up-to-date when its output exists AND matches the current target
-   *  (so changing a file's format marks it pending again). */
+   *  (so changing a file's format marks it pending again), or it was folded into
+   *  a current aggregate result. */
   private isUpToDate(job: Job): boolean {
-    return job.output != null && job.output.format === this.resolveTarget(job);
+    if (job.aggregated) return true;
+    const outs = job.outputs;
+    return outs != null && outs.length > 0 && outs[0].format === this.resolveTarget(job);
+  }
+
+  /** Build the ToolOptions for a job from current settings. */
+  private optionsFor(job: Job): ToolOptions {
+    return {
+      outputFormat: this.resolveTarget(job) as FormatId,
+      quality: this.state.settings.quality,
+      resize: this.state.settings.resize,
+      // PDF-only; ignored by image/audio tools. operation selects rotate/split/merge.
+      operation: this.state.settings.pdfOperation,
+      rotateAngle: this.state.settings.pdfRotateAngle,
+      scale: this.state.settings.pdfImageScale,
+    };
+  }
+
+  /** The tool that would run for a job (operation-aware). */
+  private toolFor(job: Job): Tool | undefined {
+    const target = this.resolveTarget(job);
+    if (!target) return undefined;
+    return this.registry.resolve(job.input, target, this.state.settings.pdfOperation);
+  }
+
+  /** Aggregate group of a job (default 1 = all-in-one). */
+  groupOf(job: Job): number {
+    return job.group ?? 1;
+  }
+
+  /** Whether a job's resolved target is an aggregate tool (merge / images→PDF) —
+   *  i.e. it participates in grouping. */
+  isAggregateTarget(job: Job): boolean {
+    return this.toolFor(job)?.aggregate === true;
+  }
+
+  /** Distinct groups in use among a category's aggregate-target jobs (sorted). */
+  groupsFor(category: Category): number[] {
+    const set = new Set<number>();
+    for (const j of this.state.jobs) {
+      if (inputCategory(j.input) === category && this.isAggregateTarget(j)) set.add(this.groupOf(j));
+    }
+    return [...set].sort((a, b) => a - b);
+  }
+
+  /** Move a job to a group; invalidates that category's aggregate results. */
+  setJobGroup(id: string, group: number): void {
+    const job = this.state.jobs.find((j) => j.input.id === id);
+    if (!job) return;
+    this.dropAggregates(this.categoriesOf([job.input]));
+    this.state = {
+      ...this.state,
+      jobs: this.state.jobs.map((j) => (j.input.id === id ? { ...j, group } : j)),
+    };
+    this.emit();
+  }
+
+  /** Put a job into a brand-new group (max group + 1 for its category). */
+  addJobToNewGroup(id: string): void {
+    const job = this.state.jobs.find((j) => j.input.id === id);
+    const c = job ? inputCategory(job.input) : null;
+    if (!c) return;
+    this.setJobGroup(id, Math.max(0, ...this.groupsFor(c)) + 1);
+  }
+
+  /** Preset: 'one' = all of a category's aggregate files in group 1; 'separate' =
+   *  each its own group (1..N in list order). */
+  setGroupMode(category: Category, mode: 'one' | 'separate'): void {
+    this.dropAggregates(new Set([category]));
+    let n = 0;
+    this.state = {
+      ...this.state,
+      jobs: this.state.jobs.map((j) => {
+        if (inputCategory(j.input) !== category || !this.isAggregateTarget(j)) return j;
+        n += 1;
+        return { ...j, group: mode === 'one' ? 1 : n };
+      }),
+    };
+    this.emit();
+  }
+
+  /** "images.pdf" + group 2 → "images-2.pdf". */
+  private withGroupSuffix(fileName: string, group: number): string {
+    const dot = fileName.lastIndexOf('.');
+    const base = dot === -1 ? fileName : fileName.slice(0, dot);
+    const ext = dot === -1 ? '' : fileName.slice(dot);
+    return `${base}-${group}${ext}`;
   }
 
   /** Convertible jobs that still need work: never converted, or their target
@@ -222,15 +424,52 @@ export class Controller {
    */
   async convertAll(force = false): Promise<void> {
     if (this.state.converting) return;
-    const targets = force ? this.convertibleJobs() : this.pendingJobs();
-    if (targets.length === 0) return;
+
+    // Partition convertible jobs by their resolved tool. Aggregate tools (merge /
+    // images→PDF) take ALL their matching inputs at once; everything else runs
+    // one input at a time through the bounded pool.
+    // Key aggregate work by tool + group, so each group yields its own file.
+    const aggregateGroups = new Map<string, { tool: Tool; group: number; jobs: Job[] }>();
+    const normalJobs: Job[] = [];
+    for (const j of this.convertibleJobs()) {
+      const tool = this.toolFor(j);
+      if (tool?.aggregate) {
+        const group = this.groupOf(j);
+        const key = `${tool.id}:${group}`;
+        const g = aggregateGroups.get(key) ?? { tool, group, jobs: [] };
+        g.jobs.push(j);
+        aggregateGroups.set(key, g);
+      } else {
+        normalJobs.push(j);
+      }
+    }
+    // How many groups each tool has → only suffix file names when >1 group.
+    const groupsPerTool = new Map<string, Set<number>>();
+    for (const g of aggregateGroups.values()) {
+      (groupsPerTool.get(g.tool.id) ?? groupsPerTool.set(g.tool.id, new Set()).get(g.tool.id)!).add(
+        g.group,
+      );
+    }
+
+    const normalTargets = force ? normalJobs : normalJobs.filter((j) => !this.isUpToDate(j));
+    // A group is dirty when forced or any member hasn't been folded in yet.
+    const dirtyGroups = [...aggregateGroups.values()].filter(
+      (g) => force || g.jobs.some((j) => !j.aggregated),
+    );
+    if (normalTargets.length === 0 && dirtyGroups.length === 0) return;
 
     this.control = { cancelled: false, paused: false, resume: null };
     this.state = { ...this.state, converting: true, paused: false };
-    this.patchJobs(targets.map((j) => j.input.id), {
+
+    const resetIds = [
+      ...normalTargets.map((j) => j.input.id),
+      ...dirtyGroups.flatMap((g) => g.jobs.map((j) => j.input.id)),
+    ];
+    this.patchJobs(resetIds, {
       stage: 'queued',
       error: undefined,
-      output: undefined,
+      outputs: undefined,
+      aggregated: false,
     });
 
     const onProgress = (e: ProgressEvent) =>
@@ -238,15 +477,6 @@ export class Controller {
         stage: e.stage,
         ...(e.stage === 'error' ? { error: e.message } : {}),
       });
-
-    const tasks: ConvertTask[] = targets.map((j) => ({
-      input: j.input,
-      options: {
-        outputFormat: this.resolveTarget(j) as FormatId,
-        quality: this.state.settings.quality,
-        resize: this.state.settings.resize,
-      },
-    }));
 
     const control = {
       isCancelled: () => this.control.cancelled,
@@ -258,20 +488,56 @@ export class Controller {
     };
 
     try {
-      // Results are sparse when cancelled (skipped tasks are left undefined);
-      // jobs not in the map keep their state (the ones not reached stay 'queued').
-      const results = await this.queue.run(tasks, onProgress, CONCURRENCY, control);
-      const byId = new Map<string, JobResult>(
-        results.filter((r): r is JobResult => r != null).map((r) => [r.inputId, r]),
-      );
-      this.state = {
-        ...this.state,
-        jobs: this.state.jobs.map((j) => {
-          const r = byId.get(j.input.id);
-          if (!r) return j;
-          return { ...j, output: r.output, error: r.error };
-        }),
-      };
+      // 1) Per-input tools through the bounded pool.
+      if (normalTargets.length > 0) {
+        const tasks: ConvertTask[] = normalTargets.map((j) => ({
+          input: j.input,
+          options: this.optionsFor(j),
+        }));
+        const results = await this.queue.run(tasks, onProgress, CONCURRENCY, control);
+        const byId = new Map<string, JobResult>(
+          results.filter((r): r is JobResult => r != null).map((r) => [r.inputId, r]),
+        );
+        this.state = {
+          ...this.state,
+          jobs: this.state.jobs.map((j) => {
+            const r = byId.get(j.input.id);
+            return r ? { ...j, outputs: r.outputs, error: r.error } : j;
+          }),
+        };
+      }
+
+      // 2) Aggregate tools: one combined file per dirty group → an AggregateResult.
+      for (const g of dirtyGroups) {
+        if (this.control.cancelled) break;
+        const inputs = g.jobs.map((j) => j.input);
+        const category = inputCategory(inputs[0]);
+        const outs = await g.tool.run(inputs, this.optionsFor(g.jobs[0]), onProgress);
+        if (outs[0] && category) {
+          const multiGroup = (groupsPerTool.get(g.tool.id)?.size ?? 1) > 1;
+          const fileName = multiGroup
+            ? this.withGroupSuffix(outs[0].fileName, g.group)
+            : outs[0].fileName;
+          const result: AggregateResult = {
+            id: `agg-${g.tool.id}-${g.group}`,
+            category,
+            group: g.group,
+            output: { ...outs[0], fileName },
+            sourceCount: inputs.length,
+          };
+          this.state = {
+            ...this.state,
+            aggregates: [...this.state.aggregates.filter((a) => a.id !== result.id), result],
+          };
+          // Members are folded in: done, no individual file (the result holds it).
+          this.patchJobs(inputs.map((i) => i.id), {
+            stage: 'done',
+            aggregated: true,
+            error: undefined,
+            outputs: undefined,
+          });
+        }
+      }
     } finally {
       // Always clear the flags — an unexpected throw out of the queue must not
       // leave the UI stuck in "Converting…".
@@ -302,12 +568,49 @@ export class Controller {
   }
 
   doneOutputs(): OutputFile[] {
-    return this.state.jobs.flatMap((j) => (j.output ? [j.output] : []));
+    return [
+      ...this.state.jobs.flatMap((j) => j.outputs ?? []),
+      ...this.state.aggregates.map((a) => a.output),
+    ];
   }
 
+  /** Total files produced (a split job contributes one per page; each aggregate
+   *  result is one file). */
+  outputCount(): number {
+    return (
+      this.state.jobs.reduce((n, j) => n + (j.outputs?.length ?? 0), 0) +
+      this.state.aggregates.length
+    );
+  }
+
+  /** Aggregate results (combined files) for one category — drives the result card. */
+  aggregatesFor(category: Category): AggregateResult[] {
+    return this.state.aggregates.filter((a) => a.category === category);
+  }
+
+  downloadAggregate(id: string): void {
+    const a = this.state.aggregates.find((x) => x.id === id);
+    if (a) downloadBlob(a.output.blob, a.output.fileName);
+  }
+
+  /** Download one specific output file of a job (a single split page). */
+  downloadOutput(id: string, index: number): void {
+    const out = this.state.jobs.find((j) => j.input.id === id)?.outputs?.[index];
+    if (out) downloadBlob(out.blob, out.fileName);
+  }
+
+  /** Download a job's result: one file directly, many (split) as a ZIP. */
   downloadOne(id: string): void {
     const job = this.state.jobs.find((j) => j.input.id === id);
-    if (job?.output) downloadBlob(job.output.blob, job.output.fileName);
+    const outs = job?.outputs;
+    if (!outs || outs.length === 0) return;
+    if (outs.length === 1) {
+      downloadBlob(outs[0].blob, outs[0].fileName);
+    } else {
+      const dot = job!.input.name.lastIndexOf('.');
+      const base = dot === -1 ? job!.input.name : job!.input.name.slice(0, dot);
+      void downloadZip(outs, `${base}.zip`);
+    }
   }
 
   async downloadAllZip(): Promise<void> {

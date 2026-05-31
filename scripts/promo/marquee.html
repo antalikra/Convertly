@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Chrome Web Store "Marquee promo tile" — 1400x560.
+     Open in a tab → DevTools device mode 1400x560, DPR=1 → Capture screenshot. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root { --accent: #6266ef; }
+      * { box-sizing: border-box; margin: 0; }
+      html, body { width: 1400px; height: 560px; }
+      body {
+        display: flex;
+        align-items: center;
+        gap: 70px;
+        padding: 0 110px;
+        font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+        color: #fff;
+        background:
+          radial-gradient(90% 130% at 88% 12%, rgba(123, 99, 255, 0.4), transparent 55%),
+          linear-gradient(135deg, #1b1633 0%, #0e0b1b 100%);
+      }
+      .mark { flex: 0 0 auto; filter: drop-shadow(0 18px 44px rgba(0,0,0,0.5)); }
+      .name { font-size: 104px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+      .tag { margin-top: 18px; font-size: 30px; color: #cdc9e0; }
+      .sub { margin-top: 10px; font-size: 20px; color: #8f8aa8; }
+      .chips { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; max-width: 760px; }
+      .chip {
+        font-size: 17px; font-weight: 600; color: #e3e0f2;
+        padding: 7px 16px; border-radius: 999px;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      }
+    </style>
+  </head>
+  <body>
+    <img class="mark" src="mark.png" width="300" height="300" alt="Convertly" />
+    <div>
+      <div class="name">Convertly</div>
+      <div class="tag">Convert images &amp; audio — right on your device.</div>
+      <div class="sub">100% local · no uploads · no tracking · files never leave your device</div>
+      <div class="chips">
+        <span class="chip">HEIC</span><span class="chip">JPG</span><span class="chip">PNG</span>
+        <span class="chip">WebP</span><span class="chip">AVIF</span><span class="chip">TIFF</span>
+        <span class="chip">BMP</span><span class="chip">MP3</span><span class="chip">WAV</span>
+        <span class="chip">FLAC</span>
+      </div>
+    </div>
+  </body>
+</html>

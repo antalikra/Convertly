@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- Chrome Web Store "Small promo tile" — 440x280.
+     Open in a tab → DevTools device mode 440x280, DPR=1 → Capture screenshot. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root { --accent: #6266ef; }
+      * { box-sizing: border-box; margin: 0; }
+      html, body { width: 440px; height: 280px; }
+      body {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 30px 32px;
+        font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+        color: #fff;
+        background:
+          radial-gradient(120% 140% at 85% 15%, rgba(123, 99, 255, 0.35), transparent 60%),
+          linear-gradient(135deg, #1b1633 0%, #100d1f 100%);
+      }
+      .mark { flex: 0 0 auto; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45)); }
+      .name { font-size: 38px; font-weight: 800; letter-spacing: -0.5px; }
+      .tag { margin-top: 6px; font-size: 14px; color: #c7c3da; line-height: 1.35; }
+      .chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+      .chip {
+        font-size: 11px; font-weight: 600; color: #d9d6ee;
+        padding: 3px 9px; border-radius: 999px;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      }
+    </style>
+  </head>
+  <body>
+    <img class="mark" src="mark.png" width="116" height="116" alt="Convertly" />
+    <div>
+      <div class="name">Convertly</div>
+      <div class="tag">Convert images &amp; audio<br />— right on your device.</div>
+      <div class="chips">
+        <span class="chip">HEIC</span><span class="chip">JPG</span>
+        <span class="chip">PNG</span><span class="chip">WebP</span>
+        <span class="chip">AVIF</span><span class="chip">MP3</span>
+      </div>
+    </div>
+  </body>
+</html>

@@ -24,6 +24,8 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
     if (brand.startsWith('hev') || brand.startsWith('heif')) return 'heif';
   }
 
+  // PDF: "%PDF-"
+  if (ascii(0, 5) === '%PDF-') return 'pdf';
   // JPEG: FF D8 FF
   if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return 'jpeg';
   // PNG: 89 50 4E 47
@@ -71,6 +73,7 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
   if (ext === 'm4a') return 'm4a';
   if (ext === 'aac') return 'aac';
   if (ext === 'ogg' || ext === 'oga') return 'ogg';
+  if (ext === 'pdf') return 'pdf';
 
   return 'unknown';
 }

@@ -1,5 +1,5 @@
 import type { ToolRegistry } from '@core/ToolRegistry';
-import type { InputFile, OutputFile, ProgressEvent, ToolOptions } from '@core/types';
+import type { InputFile, OutputFile, ProgressEvent, Tool, ToolOptions } from '@core/types';
 
 export interface ConvertTask {
   input: InputFile;
@@ -8,7 +8,8 @@ export interface ConvertTask {
 
 export interface JobResult {
   inputId: string;
-  output?: OutputFile;
+  /** A task can produce many files (1→N tools like PDF split). */
+  outputs?: OutputFile[];
   error?: string;
 }
 
@@ -55,7 +56,7 @@ export class JobQueue {
 
   private async runOne(task: ConvertTask, onProgress: (e: ProgressEvent) => void): Promise<JobResult> {
     const { input, options } = task;
-    const [tool] = this.registry.findForConversion(input, options.outputFormat);
+    const tool = this.selectTool(task);
     if (!tool) {
       const message = `No tool for ${input.detectedFormat} → ${options.outputFormat}`;
       onProgress({ inputId: input.id, stage: 'error', message });
@@ -68,6 +69,11 @@ export class JobQueue {
       onProgress(e);
     });
 
-    return failed ? { inputId: input.id, error: failed } : { inputId: input.id, output: outputs[0] };
+    return failed ? { inputId: input.id, error: failed } : { inputId: input.id, outputs };
+  }
+
+  /** Pick the handler (operation-aware; see ToolRegistry.resolve). */
+  private selectTool({ input, options }: ConvertTask): Tool | undefined {
+    return this.registry.resolve(input, options.outputFormat, options.operation);
   }
 }

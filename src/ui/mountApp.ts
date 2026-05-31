@@ -1,15 +1,59 @@
 import { Controller, type AppState } from '@app/controller';
-import { LOSSY_FORMATS, inputCategory, type FormatId } from '@core/types';
+import { LOSSY_FORMATS, inputCategory, type Category, type FormatId } from '@core/types';
 import type { ThemeMode } from '@infra/settings';
 import { formatBytes } from '@shared/format';
-import { createDropzone } from './components/Dropzone';
+import { createDropzone, type DropzoneView } from './components/Dropzone';
 import { createOptionsPanel } from './components/OptionsPanel';
 import { createFileList } from './components/FileList';
+import { createResultPanel } from './components/ResultPanel';
+import type { Job } from '@app/controller';
 import './styles/app.css';
 
 /** Show the CPU-freeze warning once a batch is at least this many files (AVIF
  *  warns at any count — its encoder is multi-threaded). */
 const HEAVY_BATCH = 10;
+
+/** Top-level tabs. View filter only: tabs change what's shown; Convert / ZIP /
+ *  Clear still act on ALL files at once (the controller stays tab-agnostic). */
+type Tab = 'media' | 'pdf';
+const TAB_OF_CATEGORY: Record<Category, Tab> = {
+  image: 'media',
+  audio: 'media',
+  document: 'pdf',
+};
+const TAB_LABEL: Record<Tab, string> = { media: 'Media', pdf: 'PDF' };
+const DROPZONE_VIEW: Record<Tab, DropzoneView> = {
+  media: {
+    title: 'Drop files here',
+    sub: 'Images: HEIC, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
+    accept: 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.m4a,.flac',
+  },
+  pdf: {
+    title: 'Drop PDF files here',
+    sub: 'PDF · rotate (more PDF tools coming)',
+    accept: 'application/pdf,.pdf',
+  },
+};
+
+/** Which tab a job belongs to (unsupported files fall under Media). */
+function tabOfJob(job: Job): Tab {
+  const c = inputCategory(job.input);
+  return c ? TAB_OF_CATEGORY[c] : 'media';
+}
+
+/** Slide a `.seg__pill` to cover the active button (same trick as OptionsPanel). */
+function syncSegPill(seg: HTMLElement): void {
+  const active = seg.querySelector<HTMLElement>('.seg__btn--active');
+  const pill = seg.querySelector<HTMLElement>('.seg__pill');
+  if (!active || !pill) return;
+  pill.style.left = `${active.offsetLeft}px`;
+  pill.style.top = `${active.offsetTop}px`;
+  pill.style.width = `${active.offsetWidth}px`;
+  pill.style.height = `${active.offsetHeight}px`;
+  if (pill.classList.contains('no-anim')) {
+    requestAnimationFrame(() => pill.classList.remove('no-anim'));
+  }
+}
 
 const MOON_ICON =
   '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-7.54-7.54C12.92 3.04 12.46 3 12 3z"/></svg>';
@@ -24,6 +68,9 @@ export function mountApp(root: HTMLElement): Controller {
   document.body.setAttribute('data-theme', 'dark');
 
   const controller = new Controller();
+
+  // Active workspace tab. Declared early so option handlers can read it.
+  let activeTab: Tab = 'media';
 
   root.innerHTML = `
     <div class="shell">
@@ -46,10 +93,18 @@ export function mountApp(root: HTMLElement): Controller {
         <button class="btn btn--icon btn--ghost" data-theme type="button" title="Toggle theme"></button>
       </header>
       <div class="content">
+        <div class="tabs" data-tabs>
+          <div class="seg seg--tabs" data-tabseg role="tablist" aria-label="Workspace">
+            <span class="seg__pill no-anim"></span>
+            <button class="seg__btn" type="button" role="tab" data-tab="media">Media</button>
+            <button class="seg__btn" type="button" role="tab" data-tab="pdf">PDF</button>
+          </div>
+        </div>
         <div class="notice" data-notice hidden></div>
         <div data-slot="dropzone"></div>
         <div data-slot="options"></div>
         <div data-slot="list"></div>
+        <div data-slot="result"></div>
       </div>
       <footer class="actionbar" data-slot="actions" hidden>
         <div class="actionbar__warn" data-heavy-warn hidden>
@@ -78,16 +133,28 @@ export function mountApp(root: HTMLElement): Controller {
       ),
     onQuality: (quality) => void controller.updateSettings({ quality }),
     onResize: (resize) => void controller.updateSettings({ resize }),
+    onOperation: (op) =>
+      void controller.updateSettings({
+        pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext',
+      }),
+    onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
+    onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
+    onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
   });
   const fileList = createFileList({
     onRemove: (id) => controller.removeJob(id),
     onDownload: (id) => controller.downloadOne(id),
     onFormat: (id, format) => controller.setJobFormat(id, format),
+    onDownloadOutput: (id, index) => controller.downloadOutput(id, index),
+    onGroup: (id, group) => controller.setJobGroup(id, group),
+    onNewGroup: (id) => controller.addJobToNewGroup(id),
   });
+  const resultPanel = createResultPanel((id) => controller.downloadAggregate(id));
 
   root.querySelector('[data-slot="dropzone"]')!.appendChild(dropzone.el);
   root.querySelector('[data-slot="options"]')!.appendChild(options.el);
   root.querySelector('[data-slot="list"]')!.appendChild(fileList.el);
+  root.querySelector('[data-slot="result"]')!.appendChild(resultPanel.el);
 
   const actions = root.querySelector<HTMLElement>('[data-slot="actions"]')!;
   const summary = root.querySelector<HTMLElement>('[data-summary]')!;
@@ -126,6 +193,18 @@ export function mountApp(root: HTMLElement): Controller {
     if (!support.contains(e.target as Node)) support.classList.remove('is-open');
   });
 
+  // ---- Top-level tabs (Media / PDF). View filter only: switching changes what's
+  // shown; Convert / ZIP / Clear stay global (see TAB_OF_CATEGORY). ----
+  const tabSeg = root.querySelector<HTMLElement>('[data-tabseg]')!;
+  for (const b of Array.from(tabSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => {
+      const tab = b.dataset.tab as Tab;
+      if (tab === activeTab) return;
+      activeTab = tab;
+      render(controller.getState());
+    });
+  }
+
   // One-shot heartbeat on the ♥ when a conversion finishes (see render()).
   supportBtn.addEventListener('animationend', () => supportBtn.classList.remove('is-beating'));
   let wasConverting = false;
@@ -140,38 +219,102 @@ export function mountApp(root: HTMLElement): Controller {
     noticeEl.hidden = !state.notice;
     noticeEl.textContent = state.notice ?? '';
 
-    // Empty state: let the dropzone grow to fill the window (avoids voids).
-    document.body.classList.toggle('is-empty', state.jobs.length === 0);
+    // Per-tab buckets (view filter only; Convert still runs over every job).
+    const tabJobs: Record<Tab, Job[]> = { media: [], pdf: [] };
+    for (const job of state.jobs) tabJobs[tabOfJob(job)].push(job);
+    const visible = tabJobs[activeTab];
 
-    const rows = controller.categoriesPresent().map((category) => ({
-      category,
-      available: controller.availableOutputFormats(category),
-      selected: controller.targetFormat(category),
-    }));
+    // Tab bar: active highlight, per-tab count, sliding pill.
+    for (const b of Array.from(tabSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+      const tab = b.dataset.tab as Tab;
+      const n = tabJobs[tab].length;
+      b.textContent = n > 0 ? `${TAB_LABEL[tab]} (${n})` : TAB_LABEL[tab];
+      const active = tab === activeTab;
+      b.classList.toggle('seg__btn--active', active);
+      b.setAttribute('aria-selected', String(active));
+    }
+    syncSegPill(tabSeg);
+
+    // Dropzone hint + picker filter follow the active tab.
+    dropzone.update(DROPZONE_VIEW[activeTab]);
+
+    // Empty state keys off the ACTIVE tab so its dropzone grows when it's empty.
+    document.body.classList.toggle('is-empty', visible.length === 0);
+
+    // Options show only the active tab's controls (Media = format rows +
+    // quality/resize; PDF = rotate). present is global → filter to the tab.
+    const present = controller.categoriesPresent();
+    const rows = present
+      .filter((category) => TAB_OF_CATEGORY[category] === activeTab && category !== 'document')
+      .map((category) => ({
+        category,
+        available: controller.availableOutputFormats(category),
+        selected: controller.targetFormat(category),
+      }));
     const selected: FormatId[] = rows.map((r) => r.selected);
-    const hasImage = rows.some((r) => r.category === 'image');
+    const imageRow = rows.find((r) => r.category === 'image');
+    // Combine presets matter only when the active tab's target is an aggregate.
+    const showCombine =
+      (activeTab === 'media' && imageRow?.selected === 'pdf') ||
+      (activeTab === 'pdf' &&
+        present.includes('document') &&
+        state.settings.pdfOperation === 'merge');
+    // Quality applies to PDF → JPG; the scale seg to both PDF → image ops.
+    const docOp = state.settings.pdfOperation;
+    const docActive = activeTab === 'pdf' && present.includes('document');
+    const pdfJpg = docActive && docOp === 'tojpg';
+    const pdfToImage = docActive && (docOp === 'tojpg' || docOp === 'topng');
     options.update({
       rows,
       quality: state.settings.quality,
-      showQuality: selected.some((f) => LOSSY_FORMATS.includes(f)),
+      showQuality: pdfJpg || selected.some((f) => LOSSY_FORMATS.includes(f)),
       resize: state.settings.resize,
-      showResize: hasImage,
+      // Resize applies to raster output, not the images→PDF combine.
+      showResize: imageRow != null && imageRow.selected !== 'pdf',
+      showPdfOps: activeTab === 'pdf' && present.includes('document'),
+      pdfOperation: state.settings.pdfOperation,
+      mergeDisabled: tabJobs.pdf.length < 2, // nothing to merge with a single PDF
+
+      rotateAngle: state.settings.pdfRotateAngle,
+      showCombine,
+      showScale: pdfToImage,
+      pdfScale: state.settings.pdfImageScale,
     });
 
     fileList.update(
-      state.jobs.map((job) => {
+      visible.map((job) => {
         const category = inputCategory(job.input);
+        const isAggregate = controller.isAggregateTarget(job);
         return {
           job,
-          options: category ? controller.availableOutputFormats(category) : [],
+          // Documents are driven by the operation picker, not a per-row format dropdown.
+          options: category && category !== 'document' ? controller.availableOutputFormats(category) : [],
           target: controller.resolveTarget(job),
+          isAggregate,
+          group: isAggregate ? controller.groupOf(job) : undefined,
+          groups: isAggregate && category ? controller.groupsFor(category) : undefined,
         };
       }),
     );
 
+    // Combined (aggregate) results for the active tab's categories.
+    const tabResults = present
+      .filter((c) => TAB_OF_CATEGORY[c] === activeTab)
+      .flatMap((c) => controller.aggregatesFor(c))
+      .map((a) => ({
+        id: a.id,
+        fileName: a.output.fileName,
+        sourceCount: a.sourceCount,
+        sizeBytes: a.output.blob.size,
+      }));
+    resultPanel.update(tabResults);
+
+    // A job is "done" if it produced its own file OR was folded into an aggregate.
+    const isDone = (j: Job) => !!j.outputs?.length || !!j.aggregated;
+
     // When a conversion finishes (converting: true → false with ≥1 success),
     // pulse the support ♥ once — it's the moment the user just got their files.
-    const doneCount = state.jobs.filter((j) => j.output).length;
+    const doneCount = state.jobs.filter(isDone).length;
     if (wasConverting && !state.converting && doneCount > 0) {
       supportBtn.classList.remove('is-beating');
       void supportBtn.offsetWidth; // reflow so the animation restarts if mid-beat
@@ -183,22 +326,21 @@ export function mountApp(root: HTMLElement): Controller {
     actions.hidden = !hasJobs;
     if (!hasJobs) return;
 
-    const done = state.jobs.filter((j) => j.output).length;
+    const done = state.jobs.filter(isDone).length;
     const errors = state.jobs.filter((j) => j.error).length;
     const total = state.jobs.length;
 
     let origBytes = 0;
     let outBytes = 0;
     for (const j of state.jobs) {
-      if (j.output) {
-        origBytes += j.input.sizeBytes;
-        outBytes += j.output.blob.size;
-      }
+      if (isDone(j)) origBytes += j.input.sizeBytes;
+      for (const o of j.outputs ?? []) outBytes += o.blob.size;
     }
+    for (const a of state.aggregates) outBytes += a.output.blob.size;
 
     summary.textContent = state.converting
       ? `${state.paused ? 'Paused' : 'Converting…'} ${done}/${total}`
-      : describe(total, done, errors, origBytes, outBytes);
+      : describe(total, done, errors, origBytes, outBytes, controller.outputCount());
 
     // Warn about a possible UI freeze right by the Convert button (proactive,
     // before clicking): any large batch can saturate the CPU, and AVIF does even
@@ -220,7 +362,8 @@ export function mountApp(root: HTMLElement): Controller {
     convertBtn.disabled = pending === 0;
     convertBtn.textContent = done > 0 && pending > 0 ? `Convert ${pending} new` : 'Convert';
     reconvertBtn.hidden = state.converting || done === 0;
-    zipBtn.hidden = done < 2;
+    // ZIP makes sense once there are ≥2 output files (one split job can suffice).
+    zipBtn.hidden = controller.outputCount() < 2;
   }
 
   return controller;
@@ -232,10 +375,14 @@ function describe(
   errors: number,
   origBytes: number,
   outBytes: number,
+  outFiles: number,
 ): string {
   const parts = [`${total} file${total === 1 ? '' : 's'}`];
   if (done) parts.push(`${done} done`);
   if (errors) parts.push(`${errors} failed`);
+  // When a job fans out (PDF split), the output count differs from the input
+  // count — show it so "1 file" doesn't hide the 106 pages produced.
+  if (outFiles > done) parts.push(`${outFiles} files out`);
   if (done && origBytes > 0) {
     const d = 1 - outBytes / origBytes;
     const pct = d >= 0 ? `−${Math.round(d * 100)}%` : `+${Math.round(-d * 100)}%`;

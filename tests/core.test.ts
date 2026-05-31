@@ -21,7 +21,13 @@ describe('ToolRegistry', () => {
     expect(reg.getById('raster-convert')).toBeDefined();
     expect(reg.getById('tiff-convert')).toBeDefined();
     expect(reg.getById('audio-convert')).toBeDefined();
-    expect(reg.all()).toHaveLength(4);
+    expect(reg.getById('pdf-rotate')).toBeDefined();
+    expect(reg.getById('pdf-split')).toBeDefined();
+    expect(reg.getById('pdf-merge')).toBeDefined();
+    expect(reg.getById('images-to-pdf')).toBeDefined();
+    expect(reg.getById('pdf-to-images')).toBeDefined();
+    expect(reg.getById('pdf-to-text')).toBeDefined();
+    expect(reg.all()).toHaveLength(10);
   });
 
   it('rejects duplicate ids', () => {
@@ -49,6 +55,44 @@ describe('ToolRegistry', () => {
     const reg = buildRegistry();
     const tools = reg.findForConversion(input('jpeg'), 'png');
     expect(tools.map((t) => t.id)).toEqual(['raster-convert']);
+  });
+
+  it('routes pdf → pdf to all three PDF tools (operation disambiguates at run time)', () => {
+    const reg = buildRegistry();
+    const tools = reg.findForConversion(input('pdf', 'doc.pdf'), 'pdf');
+    expect(tools.map((t) => t.id).sort()).toEqual(['pdf-merge', 'pdf-rotate', 'pdf-split']);
+    expect(tools.map((t) => t.operation).sort()).toEqual(['merge', 'rotate', 'split']);
+  });
+
+  it('resolve() picks the PDF tool by operation', () => {
+    const reg = buildRegistry();
+    const pdf = input('pdf', 'doc.pdf');
+    expect(reg.resolve(pdf, 'pdf', 'rotate')?.id).toBe('pdf-rotate');
+    expect(reg.resolve(pdf, 'pdf', 'split')?.id).toBe('pdf-split');
+    expect(reg.resolve(pdf, 'pdf', 'merge')?.id).toBe('pdf-merge');
+    // The merge tool is the aggregate (N→1) one.
+    expect(reg.resolve(pdf, 'pdf', 'merge')?.aggregate).toBe(true);
+    // Single-handler pairs ignore operation.
+    expect(reg.resolve(input('jpeg'), 'png')?.id).toBe('raster-convert');
+  });
+
+  it('routes image → pdf to the images-to-pdf aggregate', () => {
+    const reg = buildRegistry();
+    const tool = reg.resolve(input('jpeg'), 'pdf');
+    expect(tool?.id).toBe('images-to-pdf');
+    expect(tool?.aggregate).toBe(true);
+  });
+
+  it('routes pdf → jpg/png to the pdf-to-images tool (1→N)', () => {
+    const reg = buildRegistry();
+    const pdf = input('pdf', 'doc.pdf');
+    expect(reg.resolve(pdf, 'jpeg')?.id).toBe('pdf-to-images');
+    expect(reg.resolve(pdf, 'png')?.id).toBe('pdf-to-images');
+    expect(reg.resolve(pdf, 'txt')?.id).toBe('pdf-to-text');
+    // pdf → pdf still only the rotate/split/merge tools.
+    expect(reg.findForConversion(pdf, 'pdf').map((t) => t.id).sort()).toEqual([
+      'pdf-merge', 'pdf-rotate', 'pdf-split',
+    ]);
   });
 
   it('routes each image format to exactly one tool', () => {

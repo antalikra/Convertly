@@ -23,6 +23,21 @@ export class ToolRegistry {
     return this.tools.filter((t) => t.accepts(input) && t.outputFormats.includes(output));
   }
 
+  /**
+   * The single tool to run for input→output. When several share that pair (PDF
+   * rotate / split / merge), `operation` picks; otherwise the sole handler
+   * (no `operation`) wins.
+   */
+  resolve(input: InputFile, output: FormatId, operation?: string): Tool | undefined {
+    const candidates = this.findForConversion(input, output);
+    if (candidates.length <= 1) return candidates[0];
+    return (
+      candidates.find((t) => t.operation != null && t.operation === operation) ??
+      candidates.find((t) => t.operation == null) ??
+      candidates[0]
+    );
+  }
+
   all(): Tool[] {
     return [...this.tools];
   }

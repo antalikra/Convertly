@@ -2,11 +2,17 @@ import type { Job } from '@app/controller';
 import { inputCategory, type FormatId, type ProgressStage } from '@core/types';
 import { formatBytes } from '@shared/format';
 import { createFormatSelect } from './FormatSelect';
+import { createGroupSelect } from './GroupSelect';
 
 /** File-list section keys, in display order. `other` = unsupported inputs. */
-const GROUP_ORDER = ['image', 'audio', 'other'] as const;
+const GROUP_ORDER = ['image', 'audio', 'document', 'other'] as const;
 type Group = (typeof GROUP_ORDER)[number];
-const GROUP_LABEL: Record<Group, string> = { image: 'Images', audio: 'Audio', other: 'Other' };
+const GROUP_LABEL: Record<Group, string> = {
+  image: 'Images',
+  audio: 'Audio',
+  document: 'Documents',
+  other: 'Other',
+};
 
 const groupOf = (v: JobView): Group => inputCategory(v.job.input) ?? 'other';
 
@@ -28,6 +34,7 @@ const STAGE_LABEL: Record<ProgressStage, string> = {
 
 const DL_ICON = '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></svg>';
 const RM_ICON = '<svg viewBox="0 0 24 24"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.71l-1.42-1.42L9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.3-6.3z"/></svg>';
+const CARET_ICON = '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6z"/></svg>';
 
 export interface JobView {
   job: Job;
@@ -35,12 +42,22 @@ export interface JobView {
   options: FormatId[];
   /** Resolved target format, or null if unsupported. */
   target: FormatId | null;
+  /** True when this file's target is an aggregate (merge / images→PDF) → grouping. */
+  isAggregate?: boolean;
+  /** This file's group number (when aggregate). */
+  group?: number;
+  /** Groups currently in use for its category (for the group dropdown). */
+  groups?: number[];
 }
 
 export interface FileListCallbacks {
   onRemove(id: string): void;
   onDownload(id: string): void;
   onFormat(id: string, format: FormatId): void;
+  /** Download a single output file of a multi-output (split) job by index. */
+  onDownloadOutput(id: string, index: number): void;
+  onGroup(id: string, group: number): void;
+  onNewGroup(id: string): void;
 }
 
 interface RowHandle {
@@ -154,6 +171,10 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   const el = document.createElement('div');
   el.className = 'fileitem fileitem--enter';
 
+  // The main flex line; a multi-output (split) job adds an expandable sublist below.
+  const row = document.createElement('div');
+  row.className = 'fileitem__row';
+
   const bubble = document.createElement('span');
   bubble.className = 'fbubble';
   bubble.textContent = view.job.input.detectedFormat.slice(0, 4).toUpperCase();
@@ -169,7 +190,7 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
   meta.textContent = formatBytes(view.job.input.sizeBytes);
   info.append(name, meta);
 
-  // Target selector: "→ [FORMAT ▾]"
+  // Target selector: "→ [FORMAT ▾]  [G1 ▾]"
   const convert = document.createElement('div');
   convert.className = 'fileitem__convert';
   const fmtSelect = view.options.length > 0 ? createFormatSelect((f) => cb.onFormat(id, f)) : null;
@@ -179,45 +200,116 @@ function createRow(view: JobView, cb: FileListCallbacks): RowHandle {
     arrow.textContent = '→';
     convert.append(arrow, fmtSelect.el);
   }
+  // Group selector (only shown for aggregate targets — merge / images→PDF).
+  const groupSelect = createGroupSelect(
+    (g) => cb.onGroup(id, g),
+    () => cb.onNewGroup(id),
+  );
+  groupSelect.el.hidden = true;
+  convert.append(groupSelect.el);
 
   const status = document.createElement('span');
 
   const actions = document.createElement('div');
   actions.className = 'fileitem__actions';
+  // Expander (only shown for multi-output jobs) toggles the per-file list.
+  let expanded = false;
+  const expand = iconBtn(CARET_ICON, 'Show files');
+  expand.classList.add('fileitem__expand');
+  expand.hidden = true;
   const dl = iconBtn(DL_ICON, 'Download');
   dl.addEventListener('click', () => cb.onDownload(id));
   const rm = iconBtn(RM_ICON, 'Remove');
   rm.addEventListener('click', () => cb.onRemove(id));
-  actions.append(dl, rm);
+  actions.append(expand, dl, rm);
 
-  el.append(bubble, info, convert, status, actions);
+  row.append(bubble, info, convert, status, actions);
+
+  // Per-file list for split output (built lazily; rebuilt when the count changes).
+  const sublist = document.createElement('div');
+  sublist.className = 'fileitem__sublist';
+  sublist.hidden = true;
+  let builtCount = -1;
+
+  expand.addEventListener('click', () => {
+    expanded = !expanded;
+    sublist.hidden = !expanded;
+    expand.classList.toggle('is-open', expanded);
+    expand.title = expanded ? 'Hide files' : 'Show files';
+  });
+
+  el.append(row, sublist);
 
   // First paint animates; clear the class after so re-renders don't replay it.
   el.addEventListener('animationend', () => el.classList.remove('fileitem--enter'), { once: true });
 
   function update(v: JobView): void {
     if (fmtSelect && v.target) fmtSelect.update(v.target, v.options);
+    if (v.isAggregate && v.group != null) {
+      groupSelect.el.hidden = false;
+      groupSelect.update(v.group, v.groups ?? [v.group]);
+    } else {
+      groupSelect.el.hidden = true;
+    }
     const stage: ProgressStage = v.job.error ? 'error' : v.job.stage;
     setStatus(status, stage, v.job.error);
 
-    // Show output size + savings once converted.
-    const out = v.job.output;
-    if (out) {
-      const orig = v.job.input.sizeBytes;
-      const d = orig > 0 ? 1 - out.blob.size / orig : 0;
+    // Show output size + savings once converted. A 1→N job (split) reports the
+    // file count + combined size instead of a per-file delta.
+    const outs = v.job.outputs;
+    const orig = v.job.input.sizeBytes;
+    const multi = !!outs && outs.length > 1;
+    if (outs && outs.length > 1) {
+      const total = outs.reduce((s, o) => s + o.blob.size, 0);
+      meta.textContent = `${outs.length} files · ${formatBytes(total)}`;
+    } else if (outs && outs.length === 1) {
+      const size = outs[0].blob.size;
+      const d = orig > 0 ? 1 - size / orig : 0;
       const pct = d >= 0 ? `−${Math.round(d * 100)}%` : `+${Math.round(-d * 100)}%`;
-      meta.textContent = `${formatBytes(orig)} → ${formatBytes(out.blob.size)} (${pct})`;
+      meta.textContent = `${formatBytes(orig)} → ${formatBytes(size)} (${pct})`;
     } else {
-      meta.textContent = formatBytes(v.job.input.sizeBytes);
+      meta.textContent = formatBytes(orig);
     }
-    dl.hidden = !out;
+    dl.hidden = !(outs && outs.length > 0);
+    dl.title = multi ? 'Download ZIP' : 'Download';
+
+    // Multi-output: offer the expander + (re)build the per-file list on change.
+    expand.hidden = !multi;
+    if (multi && outs!.length !== builtCount) {
+      builtCount = outs!.length;
+      sublist.replaceChildren(...outs!.map((o, i) => subRow(o.fileName, o.blob.size, () => cb.onDownloadOutput(id, i))));
+    } else if (!multi) {
+      builtCount = -1;
+      expanded = false;
+      sublist.hidden = true;
+      expand.classList.remove('is-open');
+      sublist.replaceChildren();
+    }
   }
 
   function destroy(): void {
     fmtSelect?.destroy();
+    groupSelect.destroy();
   }
 
   return { el, update, destroy };
+}
+
+/** One row inside a split job's expanded file list: name · size · download. */
+function subRow(fileName: string, size: number, onDownload: () => void): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'suboutput';
+  const name = document.createElement('span');
+  name.className = 'suboutput__name';
+  name.textContent = fileName;
+  name.title = fileName;
+  const sz = document.createElement('span');
+  sz.className = 'suboutput__size';
+  sz.textContent = formatBytes(size);
+  const dl = iconBtn(DL_ICON, 'Download');
+  dl.addEventListener('click', onDownload);
+  el.append(name, sz, dl);
+  return el;
 }
 
 function setStatus(node: HTMLElement, stage: ProgressStage, error?: string): void {
