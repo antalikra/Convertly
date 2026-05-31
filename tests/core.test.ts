@@ -33,7 +33,8 @@ describe('ToolRegistry', () => {
     expect(reg.getById('docx-to-pdf')).toBeDefined();
     expect(reg.getById('docx-to-text')).toBeDefined();
     expect(reg.getById('docx-to-html')).toBeDefined();
-    expect(reg.all()).toHaveLength(14);
+    expect(reg.getById('pdf-compress')).toBeDefined();
+    expect(reg.all()).toHaveLength(15);
   });
 
   it('rejects duplicate ids', () => {
@@ -63,11 +64,13 @@ describe('ToolRegistry', () => {
     expect(tools.map((t) => t.id)).toEqual(['raster-convert']);
   });
 
-  it('routes pdf → pdf to all three PDF tools (operation disambiguates at run time)', () => {
+  it('routes pdf → pdf to the PDF tools (operation disambiguates at run time)', () => {
     const reg = buildRegistry();
     const tools = reg.findForConversion(input('pdf', 'doc.pdf'), 'pdf');
-    expect(tools.map((t) => t.id).sort()).toEqual(['pdf-merge', 'pdf-rotate', 'pdf-split']);
-    expect(tools.map((t) => t.operation).sort()).toEqual(['merge', 'rotate', 'split']);
+    expect(tools.map((t) => t.id).sort()).toEqual([
+      'pdf-compress', 'pdf-merge', 'pdf-rotate', 'pdf-split',
+    ]);
+    expect(tools.map((t) => t.operation).sort()).toEqual(['compress', 'merge', 'rotate', 'split']);
   });
 
   it('resolve() picks the PDF tool by operation', () => {
@@ -76,6 +79,7 @@ describe('ToolRegistry', () => {
     expect(reg.resolve(pdf, 'pdf', 'rotate')?.id).toBe('pdf-rotate');
     expect(reg.resolve(pdf, 'pdf', 'split')?.id).toBe('pdf-split');
     expect(reg.resolve(pdf, 'pdf', 'merge')?.id).toBe('pdf-merge');
+    expect(reg.resolve(pdf, 'pdf', 'compress')?.id).toBe('pdf-compress');
     // The merge tool is the aggregate (N→1) one.
     expect(reg.resolve(pdf, 'pdf', 'merge')?.aggregate).toBe(true);
     // Single-handler pairs ignore operation.
@@ -104,9 +108,9 @@ describe('ToolRegistry', () => {
     expect(reg.resolve(pdf, 'png')?.id).toBe('pdf-to-images');
     expect(reg.resolve(pdf, 'txt')?.id).toBe('pdf-to-text');
     expect(reg.resolve(pdf, 'docx')?.id).toBe('pdf-to-docx');
-    // pdf → pdf still only the rotate/split/merge tools.
+    // pdf → pdf only the rotate/split/merge/compress tools.
     expect(reg.findForConversion(pdf, 'pdf').map((t) => t.id).sort()).toEqual([
-      'pdf-merge', 'pdf-rotate', 'pdf-split',
+      'pdf-compress', 'pdf-merge', 'pdf-rotate', 'pdf-split',
     ]);
   });
 

@@ -10,6 +10,7 @@ import { imagesToPdfTool } from './tools/imagesToPdf';
 import { pdfToImagesTool } from './tools/pdfToImages';
 import { pdfToTextTool } from './tools/pdfToText';
 import { pdfToDocxTool } from './tools/pdfToDocx';
+import { pdfCompressTool } from './tools/pdfCompress';
 import { docxToPdfTool } from './tools/docxToPdf';
 import { docxToTextTool } from './tools/docxToText';
 import { docxToHtmlTool } from './tools/docxToHtml';
@@ -28,6 +29,7 @@ export function buildRegistry(): ToolRegistry {
   reg.register(pdfToImagesTool); // PDF → JPG/PNG (pdf.js) — 1→N per page
   reg.register(pdfToTextTool); // PDF → TXT (pdf.js getTextContent) — 1→1
   reg.register(pdfToDocxTool); // PDF → DOCX text (pdf.js + fflate OOXML) — 1→1, Beta
+  reg.register(pdfCompressTool); // PDF compress — rasterise via pdf.js (operation 'compress')
   reg.register(docxToPdfTool); // DOCX → PDF (mammoth + html2canvas/pdf-lib) — 1→1, Beta
   reg.register(docxToTextTool); // DOCX → TXT (mammoth extractRawText) — 1→1
   reg.register(docxToHtmlTool); // DOCX → HTML (mammoth convertToHtml) — 1→1

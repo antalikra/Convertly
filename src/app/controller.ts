@@ -32,6 +32,7 @@ export const PDF_OPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'topng', label: 'To PNG' },
   { id: 'totext', label: 'To text' },
   { id: 'todocx', label: 'To DOCX' },
+  { id: 'compress', label: 'Compress' },
 ];
 export const DOCX_OPS: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'topdf', label: 'To PDF' },

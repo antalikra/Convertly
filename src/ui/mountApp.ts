@@ -300,7 +300,7 @@ export function mountApp(root: HTMLElement): Controller {
       showRotate: anyPdfOp('rotate'),
       rotateAngle: state.settings.pdfRotateAngle,
       showCombine,
-      showScale: anyPdfOp('tojpg') || anyPdfOp('topng'),
+      showScale: anyPdfOp('tojpg') || anyPdfOp('topng') || anyPdfOp('compress'),
       pdfScale: state.settings.pdfImageScale,
       showDocxMode: anyDocxOp('topdf'),
       docxMode: state.settings.docxMode,
