@@ -37,23 +37,16 @@ body {
   min-height: 100vh;
 }
 
-/* Smooth dark<->light. `.theming` is added to <body> only for the duration of a
-   theme toggle, so EVERY element crossfades together (symmetric both ways), then
-   it's removed so normal hovers stay snappy. (The body gradient is a background
-   image and can't tween — surfaces/text/borders/icons carry the transition.) */
-body.theming,
-body.theming * {
-  transition: background-color var(--dur-base) ease-in-out,
-    border-color var(--dur-base) ease-in-out,
-    color var(--dur-base) ease-in-out,
-    fill var(--dur-base) ease-in-out !important;
-}
-/* Exclude the file rows from the crossfade: a big list is hundreds of nodes and
-   transitioning all of them janks the toggle. They snap to the new theme (text
-   on a transparent surface — barely noticeable) while the cards/chrome fade. */
-body.theming .filelist,
-body.theming .filelist * {
-  transition: none !important;
+/* Dark<->light is animated with the View Transitions API (see mountApp): the
+   whole frame — blur surfaces, gradients, shadows, icons — is GPU-crossfaded in
+   one compositor pass, so it's smooth and fully in unison both ways, with no
+   per-node background repaint (the old global `.theming` transition janked to a
+   few FPS because every blurred surface re-rendered each frame). Duration tracks
+   the base motion token; reduced-motion skips the transition in JS. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: ease-in-out;
 }
 
 /* ---- Shell: a centred card that hugs its content, capped width on big windows ---- */
@@ -236,6 +229,14 @@ body.is-tab .shell {
   flex: 1;
   font-size: var(--fs-sm);
   color: var(--text-primary);
+}
+/* Right-aligned caption for a control row (e.g. the PDF → DOCX Beta note). */
+.group__hint {
+  max-width: 60%;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.3;
 }
 
 /* ---- Dropzone (mockup .dropzone) ---- */

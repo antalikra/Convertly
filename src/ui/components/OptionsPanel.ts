@@ -88,7 +88,12 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="seg__btn" role="radio" data-op="tojpg">To JPG</button>
         <button type="button" class="seg__btn" role="radio" data-op="topng">To PNG</button>
         <button type="button" class="seg__btn" role="radio" data-op="totext">To text</button>
+        <button type="button" class="seg__btn" role="radio" data-op="todocx">To DOCX</button>
       </div>
+    </div>
+    <div class="group__row" data-pdfop-hint-row hidden>
+      <span class="group__label">To DOCX <span class="badge badge--accent badge--beta">Beta</span></span>
+      <span class="group__hint">Text only — tables, images and layout aren't kept.</span>
     </div>
     <div class="group__row" data-rotate-row>
       <span class="group__label">Rotation</span>
@@ -138,6 +143,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const rotateSeg = el.querySelector<HTMLElement>('[data-rotate-seg]')!;
   const pdfopRow = el.querySelector<HTMLElement>('[data-pdfop-row]')!;
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
+  const pdfopHintRow = el.querySelector<HTMLElement>('[data-pdfop-hint-row]')!;
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
   const scaleRow = el.querySelector<HTMLElement>('[data-scale-row]')!;
   const scaleSeg = el.querySelector<HTMLElement>('[data-scale-seg]')!;
@@ -246,6 +252,10 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       }
       syncPill(pdfopSeg);
     }
+
+    // PDF → DOCX is a best-effort text extraction; flag it (Beta) when chosen.
+    pdfopHintRow.style.display =
+      v.showPdfOps && v.pdfOperation === 'todocx' ? '' : 'none';
 
     // Angle sub-control: only meaningful for the rotate operation.
     const showRotate = v.showPdfOps && v.pdfOperation === 'rotate';

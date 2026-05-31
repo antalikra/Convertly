@@ -187,6 +187,7 @@ export class Controller {
       if (op === 'tojpg') return 'jpeg';
       if (op === 'topng') return 'png';
       if (op === 'totext') return 'txt';
+      if (op === 'todocx') return 'docx';
       return 'pdf';
     }
     return category === 'audio'

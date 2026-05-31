@@ -3,7 +3,14 @@ import type { FormatId } from '@core/types';
 export type ThemeMode = 'dark' | 'light';
 
 /** Operation chosen for PDF inputs (the document card's picker). */
-export type PdfOperation = 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext';
+export type PdfOperation =
+  | 'rotate'
+  | 'split'
+  | 'merge'
+  | 'tojpg'
+  | 'topng'
+  | 'totext'
+  | 'todocx';
 
 /** DOCX → PDF rendering mode (Beta). raster = visual fidelity; reflow = selectable text. */
 export type DocxMode = 'raster' | 'reflow';

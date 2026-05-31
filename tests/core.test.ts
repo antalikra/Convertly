@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { buildRegistry } from '../src/core/registerTools';
 import { ToolRegistry } from '../src/core/ToolRegistry';
 import { renameForFormat } from '../src/shared/filenames';
+import { buildDocx } from '../src/infra/docxWrite';
+import { unzipSync, strFromU8 } from 'fflate';
 import type { InputFile, Tool } from '../src/core/types';
 
 function input(format: InputFile['detectedFormat'], name = 'IMG_0001.heic'): InputFile {
@@ -27,8 +29,9 @@ describe('ToolRegistry', () => {
     expect(reg.getById('images-to-pdf')).toBeDefined();
     expect(reg.getById('pdf-to-images')).toBeDefined();
     expect(reg.getById('pdf-to-text')).toBeDefined();
+    expect(reg.getById('pdf-to-docx')).toBeDefined();
     expect(reg.getById('docx-to-pdf')).toBeDefined();
-    expect(reg.all()).toHaveLength(11);
+    expect(reg.all()).toHaveLength(12);
   });
 
   it('rejects duplicate ids', () => {
@@ -95,6 +98,7 @@ describe('ToolRegistry', () => {
     expect(reg.resolve(pdf, 'jpeg')?.id).toBe('pdf-to-images');
     expect(reg.resolve(pdf, 'png')?.id).toBe('pdf-to-images');
     expect(reg.resolve(pdf, 'txt')?.id).toBe('pdf-to-text');
+    expect(reg.resolve(pdf, 'docx')?.id).toBe('pdf-to-docx');
     // pdf → pdf still only the rotate/split/merge tools.
     expect(reg.findForConversion(pdf, 'pdf').map((t) => t.id).sort()).toEqual([
       'pdf-merge', 'pdf-rotate', 'pdf-split',
@@ -150,5 +154,29 @@ describe('renameForFormat', () => {
   });
   it('handles bmp output extension', () => {
     expect(renameForFormat('IMG_1234.avif', 'bmp')).toBe('IMG_1234.bmp');
+  });
+});
+
+describe('buildDocx', () => {
+  it('produces a valid OOXML zip with one paragraph per line', () => {
+    const bytes = buildDocx('First line\nSecond line');
+    const files = unzipSync(bytes);
+    // The three parts Word needs.
+    expect(Object.keys(files).sort()).toEqual([
+      '[Content_Types].xml',
+      '_rels/.rels',
+      'word/document.xml',
+    ]);
+    const doc = strFromU8(files['word/document.xml']);
+    expect((doc.match(/<w:p>/g) ?? []).length).toBe(2);
+    expect(doc).toContain('First line');
+    expect(doc).toContain('Second line');
+  });
+
+  it('escapes XML metacharacters and keeps blank lines as empty paragraphs', () => {
+    const doc = strFromU8(unzipSync(buildDocx('a < b & c\n\nx'))['word/document.xml']);
+    expect(doc).toContain('a &lt; b &amp; c');
+    expect(doc).not.toContain('a < b & c'); // raw, unescaped form must not leak
+    expect(doc).toContain('<w:p/>'); // the blank middle line
   });
 });

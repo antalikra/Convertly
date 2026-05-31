@@ -16,6 +16,12 @@ const HEAVY_BATCH = 10;
 /** Top-level tabs. View filter only: tabs change what's shown; Convert / ZIP /
  *  Clear still act on ALL files at once (the controller stays tab-agnostic). */
 type Tab = 'media' | 'pdf';
+
+/** Document with the (still-not-in-lib.dom) View Transitions API, used for the
+ *  theme crossfade. Optional so we can feature-detect and fall back. */
+type DocumentWithViewTransition = Document & {
+  startViewTransition?: (callback: () => void | Promise<void>) => { finished: Promise<void> };
+};
 const TAB_OF_CATEGORY: Record<Category, Tab> = {
   image: 'media',
   audio: 'media',
@@ -30,7 +36,7 @@ const DROPZONE_VIEW: Record<Tab, DropzoneView> = {
   },
   pdf: {
     title: 'Drop PDF or DOCX files here',
-    sub: 'PDF · rotate / split / merge / to image / to text · DOCX → PDF (Beta)',
+    sub: 'PDF · rotate / split / merge / to image / to text / to DOCX · DOCX → PDF (Beta)',
     accept:
       'application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   },
@@ -136,7 +142,7 @@ export function mountApp(root: HTMLElement): Controller {
     onResize: (resize) => void controller.updateSettings({ resize }),
     onOperation: (op) =>
       void controller.updateSettings({
-        pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext',
+        pdfOperation: op as 'rotate' | 'split' | 'merge' | 'tojpg' | 'topng' | 'totext' | 'todocx',
       }),
     onRotate: (pdfRotateAngle) => void controller.updateSettings({ pdfRotateAngle }),
     onCombine: (mode) => controller.setGroupMode(activeTab === 'pdf' ? 'document' : 'image', mode),
@@ -178,10 +184,15 @@ export function mountApp(root: HTMLElement): Controller {
   convertBtn.addEventListener('click', () => void controller.convertAll(false));
   themeBtn.addEventListener('click', () => {
     const next: ThemeMode = controller.getState().settings.theme === 'dark' ? 'light' : 'dark';
-    // Enable the global crossfade only for this toggle, then remove it.
-    document.body.classList.add('theming');
-    window.setTimeout(() => document.body.classList.remove('theming'), 280);
-    void controller.updateSettings({ theme: next });
+    // updateSettings emits synchronously → render flips `data-theme` before this
+    // returns, so a sync swap is enough for the View Transition to snapshot the
+    // new theme. The API GPU-crossfades the whole frame (blur/gradients/shadows
+    // included) in one pass — smooth + in unison, no per-node repaint jank.
+    const swap = () => void controller.updateSettings({ theme: next });
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = (document as DocumentWithViewTransition).startViewTransition;
+    if (!reduce && typeof start === 'function') start.call(document, swap);
+    else swap();
   });
 
   // Support menu (Ko-fi / PayPal) — opens external links in a new browser tab.

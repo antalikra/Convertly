@@ -9,6 +9,7 @@ import { pdfMergeTool } from './tools/pdfMerge';
 import { imagesToPdfTool } from './tools/imagesToPdf';
 import { pdfToImagesTool } from './tools/pdfToImages';
 import { pdfToTextTool } from './tools/pdfToText';
+import { pdfToDocxTool } from './tools/pdfToDocx';
 import { docxToPdfTool } from './tools/docxToPdf';
 
 /** The single place where all tools are assembled. */
@@ -24,6 +25,7 @@ export function buildRegistry(): ToolRegistry {
   reg.register(imagesToPdfTool); // Images → PDF (pdf-lib) — N→1 aggregate
   reg.register(pdfToImagesTool); // PDF → JPG/PNG (pdf.js) — 1→N per page
   reg.register(pdfToTextTool); // PDF → TXT (pdf.js getTextContent) — 1→1
+  reg.register(pdfToDocxTool); // PDF → DOCX text (pdf.js + fflate OOXML) — 1→1, Beta
   reg.register(docxToPdfTool); // DOCX → PDF (mammoth + html2canvas/pdf-lib) — 1→1, Beta
   return reg;
 }
