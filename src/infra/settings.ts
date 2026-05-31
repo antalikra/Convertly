@@ -44,6 +44,10 @@ export interface Settings {
   pdfMargin: number;
   /** PDF "Pages" op: which pages to keep, in order, e.g. "1-3, 5, 8-10". */
   pdfPageRange: string;
+  /** PDF "Stamp" op: watermark/stamp text, its position, and page numbers. */
+  stampText: string;
+  stampPosition: 'center' | 'footer';
+  stampPageNumbers: boolean;
   /** Operation applied to PDF inputs. */
   pdfOperation: PdfOperation;
   /** Clockwise rotation for the PDF rotate operation (degrees, multiple of 90). */
@@ -68,6 +72,9 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfOrientation: 'auto',
   pdfMargin: 0,
   pdfPageRange: '',
+  stampText: '',
+  stampPosition: 'center',
+  stampPageNumbers: false,
   pdfOperation: 'rotate',
   pdfRotateAngle: 90,
   pdfImageScale: 2,

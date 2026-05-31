@@ -61,6 +61,11 @@ export interface OptionsView {
   /** Page-range input — shown when a PDF is set to Pages. */
   showPages: boolean;
   pageRange: string;
+  /** Stamp controls — shown when a PDF is set to Stamp. */
+  showStamp: boolean;
+  stampText: string;
+  stampPosition: string; // 'center' | 'footer'
+  stampPageNumbers: boolean;
 }
 
 export interface OptionsHandlers {
@@ -79,6 +84,9 @@ export interface OptionsHandlers {
   onPdfMargin(margin: number): void;
   onScale(scale: number): void;
   onPageRange(spec: string): void;
+  onStampText(text: string): void;
+  onStampPosition(position: string): void;
+  onStampPageNumbers(on: boolean): void;
   onDocxMode(mode: 'raster' | 'reflow'): void;
 }
 
@@ -138,6 +146,26 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     <div class="group__row" data-pagerange-row style="display:none">
       <span class="group__label">Pages</span>
       <input type="text" class="opt-input" data-pagerange placeholder="e.g. 1-3, 5, 8-10" aria-label="Pages to keep" />
+    </div>
+    <div class="group__row" data-stamp-row style="display:none">
+      <span class="group__label">Stamp text</span>
+      <input type="text" class="opt-input" data-stamptext placeholder="e.g. CONFIDENTIAL" aria-label="Stamp text" />
+    </div>
+    <div class="group__row" data-stamppos-row style="display:none">
+      <span class="group__label">Position</span>
+      <div class="seg" data-stamppos-seg role="radiogroup" aria-label="Stamp position">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-stamppos="center">Center</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppos="footer">Footer</button>
+      </div>
+    </div>
+    <div class="group__row" data-stamppage-row style="display:none">
+      <span class="group__label">Page numbers</span>
+      <div class="seg" data-stamppage-seg role="radiogroup" aria-label="Page numbers">
+        <span class="seg__pill no-anim"></span>
+        <button type="button" class="seg__btn" role="radio" data-stamppage="off">Off</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppage="on">On</button>
+      </div>
     </div>
     <div class="group__row" data-pdfop-hint-row style="display:none">
       <span class="group__label">To DOCX <span class="badge badge--accent badge--beta">Beta</span></span>
@@ -233,6 +261,12 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
   const pagerangeRow = el.querySelector<HTMLElement>('[data-pagerange-row]')!;
   const pagerangeInput = el.querySelector<HTMLInputElement>('[data-pagerange]')!;
+  const stampRow = el.querySelector<HTMLElement>('[data-stamp-row]')!;
+  const stampInput = el.querySelector<HTMLInputElement>('[data-stamptext]')!;
+  const stampposRow = el.querySelector<HTMLElement>('[data-stamppos-row]')!;
+  const stampposSeg = el.querySelector<HTMLElement>('[data-stamppos-seg]')!;
+  const stamppageRow = el.querySelector<HTMLElement>('[data-stamppage-row]')!;
+  const stamppageSeg = el.querySelector<HTMLElement>('[data-stamppage-seg]')!;
   const pdfopHintRow = el.querySelector<HTMLElement>('[data-pdfop-hint-row]')!;
   const combineRow = el.querySelector<HTMLElement>('[data-combine-row]')!;
   const pdfpageRow = el.querySelector<HTMLElement>('[data-pdfpage-row]')!;
@@ -251,6 +285,13 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   quality.addEventListener('input', () => h.onQuality(Number(quality.value)));
   resize.addEventListener('input', () => h.onResize(Number(resize.value)));
   pagerangeInput.addEventListener('input', () => h.onPageRange(pagerangeInput.value));
+  stampInput.addEventListener('input', () => h.onStampText(stampInput.value));
+  for (const b of Array.from(stampposSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onStampPosition(String(b.dataset.stamppos)));
+  }
+  for (const b of Array.from(stamppageSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+    b.addEventListener('click', () => h.onStampPageNumbers(b.dataset.stamppage === 'on'));
+  }
   for (const b of Array.from(resizemodeSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
     b.addEventListener('click', () => h.onResizeMode(String(b.dataset.resizemode)));
   }
@@ -302,7 +343,8 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       !v.showCombine &&
       !v.showDocxMode &&
       !v.showDocxHint &&
-      !v.showPages
+      !v.showPages &&
+      !v.showStamp
     ) {
       el.hidden = true;
       return;
@@ -442,6 +484,26 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     pagerangeRow.style.display = v.showPages ? '' : 'none';
     if (v.showPages && document.activeElement !== pagerangeInput) {
       pagerangeInput.value = v.pageRange;
+    }
+
+    // PDF Stamp: text + position + page numbers.
+    stampRow.style.display = v.showStamp ? '' : 'none';
+    stampposRow.style.display = v.showStamp ? '' : 'none';
+    stamppageRow.style.display = v.showStamp ? '' : 'none';
+    if (v.showStamp) {
+      if (document.activeElement !== stampInput) stampInput.value = v.stampText;
+      for (const b of Array.from(stampposSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = b.dataset.stamppos === v.stampPosition;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(stampposSeg);
+      for (const b of Array.from(stamppageSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
+        const active = (b.dataset.stamppage === 'on') === v.stampPageNumbers;
+        b.classList.toggle('seg__btn--active', active);
+        b.setAttribute('aria-checked', String(active));
+      }
+      syncPill(stamppageSeg);
     }
 
     // PDF → DOCX is a best-effort text extraction; flag it (Beta) when chosen.

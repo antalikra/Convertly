@@ -158,6 +158,10 @@ export function mountApp(root: HTMLElement): Controller {
     onPdfMargin: (pdfMargin) => void controller.updateSettings({ pdfMargin }),
     onScale: (pdfImageScale) => void controller.updateSettings({ pdfImageScale }),
     onPageRange: (pdfPageRange) => void controller.updateSettings({ pdfPageRange }),
+    onStampText: (stampText) => void controller.updateSettings({ stampText }),
+    onStampPosition: (p) =>
+      void controller.updateSettings({ stampPosition: p as 'center' | 'footer' }),
+    onStampPageNumbers: (stampPageNumbers) => void controller.updateSettings({ stampPageNumbers }),
     onDocxMode: (docxMode) => void controller.updateSettings({ docxMode }),
   });
   const fileList = createFileList({
@@ -322,6 +326,10 @@ export function mountApp(root: HTMLElement): Controller {
       showDocxHint: anyPdfOp('todocx'),
       showPages: anyPdfOp('pages'),
       pageRange: state.settings.pdfPageRange,
+      showStamp: anyPdfOp('stamp'),
+      stampText: state.settings.stampText,
+      stampPosition: state.settings.stampPosition,
+      stampPageNumbers: state.settings.stampPageNumbers,
     });
 
     fileList.update(

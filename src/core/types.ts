@@ -95,6 +95,9 @@ export interface ToolOptions {
   pdfOrientation?: string; // images → PDF: 'auto' | 'portrait' | 'landscape'
   pdfMargin?: number; // images → PDF: page margin in pt
   pageRange?: string; // PDF 'pages' op: pages to keep, e.g. "1-3, 5, 8-10"
+  stampText?: string; // PDF 'stamp' op: watermark / stamp text
+  stampPosition?: string; // 'center' (diagonal) | 'footer'
+  stampPageNumbers?: boolean; // add page numbers
   operation?: string; // disambiguates tools sharing an output format (e.g. PDF rotate vs split)
   [key: string]: unknown; // room for future tool options
 }
