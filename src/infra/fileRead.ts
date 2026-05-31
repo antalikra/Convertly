@@ -44,6 +44,8 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
     // Only the explicit M4A brand — avoid misreading MP4 video (isom/mp42).
     if (ascii(8, 12).toLowerCase().startsWith('m4a')) return 'm4a';
   }
+  // SVG: XML text starting with "<svg" (xml-declared SVGs are caught by extension).
+  if (ascii(0, 4).toLowerCase() === '<svg') return 'svg';
   // GIF: "GIF87a" / "GIF89a"
   if (ascii(0, 3) === 'GIF') return 'gif';
   // BMP: "BM"
@@ -67,6 +69,7 @@ export async function detectFormat(file: File): Promise<FormatId | 'unknown'> {
   if (ext === 'bmp') return 'bmp';
   if (ext === 'avif') return 'avif';
   if (ext === 'tif' || ext === 'tiff') return 'tiff';
+  if (ext === 'svg') return 'svg';
   if (ext === 'mp3') return 'mp3';
   if (ext === 'wav') return 'wav';
   if (ext === 'flac') return 'flac';

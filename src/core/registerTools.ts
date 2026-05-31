@@ -2,6 +2,7 @@ import { ToolRegistry } from './ToolRegistry';
 import { heicConvertTool } from './tools/heicConvert';
 import { rasterConvertTool } from './tools/rasterConvert';
 import { tiffConvertTool } from './tools/tiffConvert';
+import { svgConvertTool } from './tools/svgConvert';
 import { audioConvertTool } from './tools/audioConvert';
 import { pdfRotateTool } from './tools/pdfRotate';
 import { pdfSplitTool } from './tools/pdfSplit';
@@ -23,6 +24,7 @@ export function buildRegistry(): ToolRegistry {
   reg.register(heicConvertTool); // HEIC/HEIF in (libheif)
   reg.register(rasterConvertTool); // JPG/PNG/WebP/GIF/BMP/AVIF in (browser-native)
   reg.register(tiffConvertTool); // TIFF in (utif2)
+  reg.register(svgConvertTool); // SVG in (<img> + canvas) → raster
   reg.register(audioConvertTool); // MP3/WAV/FLAC/M4A/AAC/OGG in (Web Audio)
   reg.register(pdfRotateTool); // PDF rotate (pdf-lib) — 1→1, operation 'rotate'
   reg.register(pdfSplitTool); // PDF split pages (pdf-lib) — 1→N, operation 'split'

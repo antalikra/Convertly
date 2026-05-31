@@ -12,6 +12,7 @@ export type FormatId =
   | 'bmp'
   | 'avif'
   | 'tiff'
+  | 'svg'
   // audio
   | 'wav'
   | 'mp3'

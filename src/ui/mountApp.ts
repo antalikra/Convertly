@@ -31,8 +31,8 @@ const TAB_LABEL: Record<Tab, string> = { media: 'Media', pdf: 'Documents' };
 const DROPZONE_VIEW: Record<Tab, DropzoneView> = {
   media: {
     title: 'Drop files here',
-    sub: 'Images: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
-    accept: 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.m4a,.flac',
+    sub: 'Images: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF, SVG · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
+    accept: 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.svg,.m4a,.flac',
   },
   pdf: {
     title: 'Drop PDF or DOCX files here',

@@ -36,7 +36,8 @@ describe('ToolRegistry', () => {
     expect(reg.getById('pdf-compress')).toBeDefined();
     expect(reg.getById('pdf-pages')).toBeDefined();
     expect(reg.getById('pdf-stamp')).toBeDefined();
-    expect(reg.all()).toHaveLength(17);
+    expect(reg.getById('svg-convert')).toBeDefined();
+    expect(reg.all()).toHaveLength(18);
   });
 
   it('rejects duplicate ids', () => {
@@ -145,6 +146,11 @@ describe('ToolRegistry', () => {
   it('handles heif input', () => {
     const reg = buildRegistry();
     expect(reg.findForConversion(input('heif'), 'webp')).toHaveLength(1);
+  });
+
+  it('routes svg → png to the svg tool', () => {
+    const reg = buildRegistry();
+    expect(reg.resolve(input('svg', 'icon.svg'), 'png')?.id).toBe('svg-convert');
   });
 
   it('finds no tool for unknown input', () => {
