@@ -337,6 +337,7 @@ export function mountApp(root: HTMLElement): Controller {
       showDocxMode: anyDocxOp('topdf'),
       docxMode: state.settings.docxMode,
       showDocxHint: anyPdfOp('todocx'),
+      showCompressHint: anyPdfOp('compress'),
       showPages: anyPdfOp('pages'),
       pageRange: state.settings.pdfPageRange,
       showStamp: anyPdfOp('stamp'),

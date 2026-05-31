@@ -67,6 +67,8 @@ export interface OptionsView {
   docxMode: string; // 'raster' | 'reflow'
   /** "Text only" Beta hint — shown when a PDF is set to To DOCX. */
   showDocxHint: boolean;
+  /** Compress caveat hint — shown when a PDF is set to Compress. */
+  showCompressHint: boolean;
   /** Page-range input — shown when a PDF is set to Pages. */
   showPages: boolean;
   pageRange: string;
@@ -189,7 +191,13 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         <button type="button" class="seg__btn" role="radio" data-op="totext">Text</button>
         <button type="button" class="seg__btn" role="radio" data-op="todocx">DOCX</button>
         <button type="button" class="seg__btn" role="radio" data-op="compress">Compress</button>
+        <button type="button" class="seg__btn" role="radio" data-op="pages">Pages</button>
+        <button type="button" class="seg__btn" role="radio" data-op="stamp">Stamp</button>
       </div>
+    </div>
+    <div class="group__row" data-compress-hint-row style="display:none">
+      <span class="group__label">Compress</span>
+      <span class="group__hint">Rasterises pages — best for scanned/image PDFs; text PDFs may grow.</span>
     </div>
     <div class="group__row" data-pagerange-row style="display:none">
       <span class="group__label">Pages</span>
@@ -316,6 +324,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const audiobitrateSeg = el.querySelector<HTMLElement>('[data-audiobitrate-seg]')!;
   const pdfopRow = el.querySelector<HTMLElement>('[data-pdfop-row]')!;
   const pdfopSeg = el.querySelector<HTMLElement>('[data-pdfop-seg]')!;
+  const compressHintRow = el.querySelector<HTMLElement>('[data-compress-hint-row]')!;
   const pagerangeRow = el.querySelector<HTMLElement>('[data-pagerange-row]')!;
   const pagerangeInput = el.querySelector<HTMLInputElement>('[data-pagerange]')!;
   const stampRow = el.querySelector<HTMLElement>('[data-stamp-row]')!;
@@ -603,6 +612,9 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       }
       syncPill(stamppageSeg);
     }
+
+    // Compress caveat (rasterises; text PDFs may grow).
+    compressHintRow.style.display = v.showCompressHint ? '' : 'none';
 
     // PDF → DOCX is a best-effort text extraction; flag it (Beta) when chosen.
     pdfopHintRow.style.display = v.showDocxHint ? '' : 'none';

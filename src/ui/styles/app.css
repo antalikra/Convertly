@@ -322,6 +322,18 @@ body.is-empty .dropzone { flex: 1 1 auto; }
     height var(--dur-base) var(--ease-emphasis);
 }
 .seg__pill.no-anim { transition: none; }
+/* The global PDF operation bar has many ops — let it fill the row and scroll
+   horizontally (no wrap → the sliding pill stays correct) instead of cramming. */
+[data-pdfop-row] .group__label { flex: 0 0 auto; }
+[data-pdfop-seg] {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[data-pdfop-seg]::-webkit-scrollbar { display: none; }
+[data-pdfop-seg] .seg__btn { flex: 0 0 auto; }
+
 .seg__btn {
   position: relative;
   z-index: 1;
