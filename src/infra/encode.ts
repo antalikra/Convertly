@@ -39,8 +39,10 @@ export async function encodeBlob(
   if (!ctx) {
     throw new Error('Could not get 2D canvas context');
   }
-  // JPEG has no alpha — flatten transparency onto white (else it turns black).
-  if (format === 'jpeg') {
+  // JPEG/BMP have no usable alpha and our AVIF encoder doesn't carry it through —
+  // flatten transparency onto white so it isn't rendered as a black box. PNG/WebP/
+  // TIFF keep their alpha.
+  if (format === 'jpeg' || format === 'bmp' || format === 'avif') {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, w, h);
   }
