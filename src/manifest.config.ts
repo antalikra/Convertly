@@ -5,7 +5,7 @@ import pkg from '../package.json';
 // via drag-drop / file picker, so no host permissions are requested.
 export default defineManifest({
   manifest_version: 3,
-  name: 'Convertly — Image & Audio Converter',
+  name: 'Convertly — Image, Audio & Document Converter',
   version: pkg.version,
   description: pkg.description,
   // No default_popup: the background worker opens a persistent window on click
