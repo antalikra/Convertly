@@ -1,7 +1,7 @@
 {
   "name": "convertly",
-  "version": "0.1.0",
-  "description": "Convert images, audio (to WAV/MP3/OGG) and documents (PDF, DOCX) locally. Files never leave your device.",
+  "version": "0.2.0",
+  "description": "Convert images, audio, PDFs and Word files locally in your browser. Files never leave your device.",
   "type": "module",
   "scripts": {
     "dev": "vite",
