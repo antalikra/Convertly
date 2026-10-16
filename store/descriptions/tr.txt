@@ -14,10 +14,10 @@ NEDEN CONVERTLY
 • 14 dilde kullanılabilir.
 
 HEIC'TEN FAZLASI
-• Görseller: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF ve SVG'den JPG, PNG, WebP, AVIF, TIFF, BMP veya tek bir PDF'ye. Kalite ve boyut ayarı.
-• Ses: MP3, WAV, FLAC, M4A, AAC ve OGG'den MP3, WAV veya OGG'ye. Kırpma, mono ve normalleştirme.
-• PDF: birleştirme, bölme, döndürme, sıkıştırma, sayfa seçme veya sıralama, filigran ya da sayfa numarası ekleme, JPG, PNG, metin veya DOCX'e dönüştürme.
-• Word: DOCX'ten PDF, metin veya HTML'ye (beta).
+• Diğer görseller: biçimi, kaliteyi veya boyutu değiştirin ya da birden çok görseli tek bir PDF'de toplayın.
+• Ses: kayıtları küçük MP3 dosyalarına dönüştürün, kırpın ve ses düzeyini dengeleyin.
+• PDF: dosyaları birleştirin, bölün, döndürün ve sıkıştırın, sayfaları seçin veya sıralayın, sayfa numarası ya da filigran ekleyin, sayfaları görsel veya metin olarak kaydedin.
+• Word belgeleri: PDF olarak kaydedin (beta).
 
 İZİNLER
 Yalnızca ayarlarınızı hatırlamak için "storage". Convertly ziyaret ettiğiniz web sitelerini okuyamaz.

@@ -3,7 +3,7 @@
     "message": "HEIC JPG 변환기 — Convertly"
   },
   "extDescription": {
-    "message": "아이폰 HEIC 사진을 브라우저에서 JPG로 변환하세요. 업로드는 전혀 없습니다. PNG, WebP, AVIF, MP3, WAV, PDF 도구도 제공합니다."
+    "message": "아이폰 HEIC 사진을 브라우저에서 JPG로 변환하세요. 업로드는 전혀 없습니다. 다른 이미지, 오디오, PDF 파일도 변환합니다."
   },
   "actionTitle": {
     "message": "Convertly 열기"

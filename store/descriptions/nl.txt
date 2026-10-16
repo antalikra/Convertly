@@ -14,10 +14,10 @@ WAAROM CONVERTLY
 • Beschikbaar in 14 talen.
 
 MEER DAN HEIC
-• Afbeeldingen: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF en SVG naar JPG, PNG, WebP, AVIF, TIFF, BMP of één pdf. Kwaliteit en formaat instelbaar.
-• Audio: MP3, WAV, FLAC, M4A, AAC en OGG naar MP3, WAV of OGG. Inkorten, mono en normaliseren.
-• Pdf: samenvoegen, splitsen, draaien, comprimeren, pagina's bewaren of herschikken, watermerk of paginanummers toevoegen, omzetten naar JPG, PNG, tekst of DOCX.
-• Word: DOCX naar pdf, tekst of HTML (bèta).
+• Andere afbeeldingen: wijzig het formaat, de kwaliteit of de grootte, of zet meerdere afbeeldingen in één pdf.
+• Audio: zet opnames om in compacte MP3-bestanden, kort ze in en maak het volume gelijkmatig.
+• Pdf: bestanden samenvoegen, splitsen, draaien en comprimeren, pagina's bewaren of herschikken, paginanummers of een watermerk toevoegen, pagina's opslaan als afbeelding of tekst.
+• Word-documenten: opslaan als pdf (bèta).
 
 MACHTIGINGEN
 Alleen 'storage', om je instellingen te onthouden. Convertly kan de websites die je bezoekt niet lezen.

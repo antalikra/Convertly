@@ -14,10 +14,10 @@ Convertly를 쓰는 이유
 • 14개 언어 지원.
 
 HEIC 그 이상
-• 이미지: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF, SVG를 JPG, PNG, WebP, AVIF, TIFF, BMP 또는 PDF 한 개로. 품질과 크기 조절.
-• 오디오: MP3, WAV, FLAC, M4A, AAC, OGG를 MP3, WAV, OGG로. 자르기, 모노, 노멀라이즈.
-• PDF: 병합, 분할, 회전, 압축, 페이지 선택·순서 변경, 워터마크나 페이지 번호 추가, JPG·PNG·텍스트·DOCX로 변환.
-• Word: DOCX를 PDF, 텍스트, HTML로(베타).
+• 다른 이미지: 형식, 품질, 크기를 바꾸거나 여러 이미지를 PDF 하나로 묶을 수 있습니다.
+• 오디오: 녹음을 가벼운 MP3 파일로 바꾸고, 자르고, 음량을 고르게 맞춥니다.
+• PDF: 파일 병합, 분할, 회전, 압축, 페이지 선택·순서 변경, 페이지 번호나 워터마크 추가, 페이지를 이미지나 텍스트로 저장.
+• Word 문서: PDF로 저장(베타).
 
 권한
 설정을 기억하기 위한 "storage"만 사용합니다. Convertly는 방문하는 웹사이트를 읽을 수 없습니다.

@@ -1,6 +1,6 @@
 {
   "name": "convertly",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert iPhone HEIC photos to JPG in your browser. Also images, audio and PDF tools. Files never leave your device.",
   "type": "module",
   "scripts": {

@@ -14,10 +14,10 @@ POR QUÉ CONVERTLY
 • Disponible en 14 idiomas.
 
 MÁS QUE HEIC
-• Imágenes: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF y SVG a JPG, PNG, WebP, AVIF, TIFF, BMP o un único PDF. Control de calidad y tamaño.
-• Audio: MP3, WAV, FLAC, M4A, AAC y OGG a MP3, WAV u OGG. Recortar, mono y normalizar.
-• PDF: unir, dividir, girar, comprimir, conservar o reordenar páginas, añadir marca de agua o números de página, convertir a JPG, PNG, texto o DOCX.
-• Word: DOCX a PDF, texto o HTML (beta).
+• Otras imágenes: cambia el formato, la calidad o el tamaño, o junta varias imágenes en un solo PDF.
+• Audio: convierte grabaciones en archivos MP3 ligeros, recórtalas e iguala el volumen.
+• PDF: une, divide, gira y comprime archivos, conserva o reordena páginas, añade números de página o una marca de agua, guarda páginas como imágenes o texto.
+• Documentos de Word: guárdalos como PDF (beta).
 
 PERMISOS
 Solo «storage», para recordar tus ajustes. Convertly no puede leer los sitios web que visitas.

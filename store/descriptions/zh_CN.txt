@@ -14,10 +14,10 @@
 • 支持 14 种语言。
 
 不止 HEIC
-• 图片：HEIC、HEIF、JPG、PNG、WebP、GIF、BMP、AVIF、TIFF 和 SVG 转为 JPG、PNG、WebP、AVIF、TIFF、BMP 或单个 PDF。可调整质量和尺寸。
-• 音频：MP3、WAV、FLAC、M4A、AAC 和 OGG 转为 MP3、WAV 或 OGG。支持剪切、单声道和音量标准化。
-• PDF：合并、拆分、旋转、压缩、保留或重排页面、添加水印或页码，转换为 JPG、PNG、文本或 DOCX。
-• Word：DOCX 转 PDF、文本或 HTML（测试版）。
+• 其他图片：更改格式、质量或尺寸，或把多张图片合成一个 PDF。
+• 音频：把录音转成小巧的 MP3 文件，还能剪切并统一音量。
+• PDF：合并、拆分、旋转、压缩文件，保留或重排页面，添加页码或水印，把页面保存为图片或文本。
+• Word 文档：另存为 PDF（测试版）。
 
 权限
 仅使用 “storage” 来记住你的设置。Convertly 无法读取你访问的网站。

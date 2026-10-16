@@ -391,7 +391,7 @@ function cardHtml(kind) {
   </style></head><body><img src="${ICON()}" alt="">
   <h1>Convertly</h1>
   <p>${start ? 'HEIC to JPG — right in your browser' : 'Free · Private · Works offline'}</p>
-  <small>${start ? 'Nothing is uploaded' : 'HEIC · JPG · PNG · WebP · AVIF · PDF · MP3'}</small></body></html>`;
+  <small>${start ? 'Nothing is uploaded' : 'Photos · Audio · PDF'}</small></body></html>`;
 }
 
 function tileHtml() {
@@ -421,7 +421,7 @@ function marqueeHtml() {
   </style></head><body>
   <div class="left"><div class="brand"><img src="${ICON()}" alt=""><h1>Convertly</h1></div>
   <h2>Convert iPhone HEIC photos to JPG,<br>right in your browser</h2>
-  <ul><li>Nothing is uploaded, works offline</li><li>Batches of up to 200 photos</li><li>Plus PNG, WebP, AVIF, PDF and MP3</li></ul></div>
+  <ul><li>Nothing is uploaded, works offline</li><li>Batches of up to 200 photos</li><li>Other images, audio and PDF too</li></ul></div>
   ${windowHtml('done', { left: 1400 - 50 - Math.round(W * scale), top: Math.round((560 - BAR - H * scale) / 2), scale })}
   </body></html>`;
 }
@@ -616,9 +616,9 @@ async function makeVideo(meta, composer) {
     queued: ['Step 2', 'Click <b>Convert</b>'],
     converting: ['Step 2', 'Converted <b>on your computer</b> — nothing is uploaded'],
     done: ['Step 3', 'Download one by one or as a <b>ZIP</b>'],
-    formats: ['Formats', 'JPG, PNG, <b>WebP</b>, AVIF — with quality and size'],
+    formats: ['Formats', 'Any <b>format</b>, quality and size'],
     docs: ['Documents', '<b>PDF tools</b>: merge, split, rotate, compress'],
-    audio: ['Audio', 'WAV, M4A, FLAC to <b>MP3</b> or OGG'],
+    audio: ['Audio', 'Recordings to compact <b>MP3</b>'],
   };
   for (const [name, [step, caption]] of Object.entries(scenes)) await render(composer, stageHtml(name, step, caption), path.join(CAP, `stage-${name}.png`), Wv, Hv);
   await render(composer, cardHtml('start'), path.join(CAP, 'stage-card-start.png'), Wv, Hv);
@@ -650,9 +650,9 @@ async function makeVideo(meta, composer) {
 const SCREENSHOTS = [
   ['done', 'Convert iPhone HEIC photos to JPG', 'Drop your photos, click Convert, download. It takes seconds and happens right in your browser.', ['Nothing is uploaded', 'Up to 200 photos at once', 'GPS location removed']],
   ['empty', 'Your photos never leave your computer', 'Convertly converts on your device: no uploads, no account, no tracking. It even works offline.', ['No servers involved', 'Only the "storage" permission', 'Open source']],
-  ['formats', 'JPG, PNG, WebP, AVIF and more', 'Pick a format for all files or for each one, set the quality and shrink big photos to a maximum size.', ['Per-file formats', 'Quality and resize', 'ZIP download']],
+  ['formats', 'Pick the format, quality and size', 'Pick a format for all files or for each one, set the quality and shrink big photos to a maximum size.', ['Per-file formats', 'Quality and resize', 'ZIP download']],
   ['docs', 'PDF tools built in', 'Merge, split, rotate and compress PDFs, keep or reorder pages, add page numbers, turn pages into JPG or text. Word to PDF too.', ['Merge in any order', 'Split into pages', 'Watermark and page numbers']],
-  ['audio', 'Audio too: WAV, M4A, FLAC to MP3', 'Shrink recordings to MP3 or OGG. Trim them, mix to mono and even out the volume.', ['MP3 128–320 kbps', 'Trim and normalize', 'Many files at once']],
+  ['audio', 'Audio too: recordings to MP3', 'Shrink recordings to MP3 or OGG. Trim them, mix to mono and even out the volume.', ['MP3 128–320 kbps', 'Trim and normalize', 'Many files at once']],
 ];
 
 async function main() {
