@@ -3,6 +3,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import { SLUGS, type Slug } from '../../site/pages';
 import { en } from '../../site/content/en';
+import { STORE_URL } from '../../site/config';
 import { addFiles, convert, row, download, sample, MAGIC } from '../e2e/fixtures';
 import { png, wav, pdf, docx, jpegSize, pdfPages } from '../e2e/make';
 
@@ -46,7 +47,7 @@ for (const slug of SLUGS) {
     // The converter's own header bits moved into the page header.
     await expect(site.locator('#app .topbar')).toHaveCount(0);
     await expect(site.locator('.site-header [data-theme-btn]')).toBeVisible();
-    await expect(site.locator('.cta a.btn')).toHaveAttribute('href', /^https:\/\/chromewebstore\.google\.com\/detail\//);
+    await expect(site.locator('.cta a.btn')).toHaveAttribute('href', STORE_URL);
   });
 }
 
@@ -70,7 +71,7 @@ test('HEIC to JPG: an iPhone photo becomes a full-size JPG, then the extension i
   expect(MAGIC.jpg(out.bytes)).toBe(true);
   expect(jpegSize(out.bytes)).toEqual({ width: 1024, height: 768 });
   await expect(offer).toBeVisible();
-  await expect(offer.locator('a')).toHaveAttribute('href', /chromewebstore\.google\.com/);
+  await expect(offer.locator('a')).toHaveAttribute('href', STORE_URL);
 });
 
 test('HEIC to PNG and HEIC to PDF pages start on their format', async ({ site }) => {

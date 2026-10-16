@@ -7,7 +7,7 @@ export const SITE_URL = 'https://antalikra.github.io/Convertly/';
 /** Chrome Web Store item id of the extension (32 letters a–p), shown in the
  *  developer dashboard after the first upload. Empty = not published yet: local
  *  builds warn, CI builds fail, so the site never goes out with dead store links. */
-export const EXTENSION_ID = '';
+export const EXTENSION_ID = 'pmjajocohhkleofcnmbconknhmfelhgn';
 
 export const STORE_URL = `https://chromewebstore.google.com/detail/${EXTENSION_ID || 'EXTENSION_ID'}`;
 
