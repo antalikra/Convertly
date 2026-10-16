@@ -88,19 +88,20 @@ ${extra}<script type="module" src="/site/main.ts"></script>
   }
 
   function header(l: SiteCopy, active?: Slug): string {
-    const links = SLUGS.map((slug) => {
-      const current = slug === active ? ' aria-current="page"' : '';
-      return `<a class="site-nav__link"${current} href="${href(l, slug)}">${esc(l.nav[slug])}</a>`;
-    }).join('');
+    // The current page's link holds the lit pill; it carries a view-transition
+    // name, so going to another tool slides it over (see site.css).
+    const links = SLUGS.map((slug) =>
+      slug === active
+        ? `<a class="site-nav__link" aria-current="page" href="${href(l, slug)}"><span class="site-nav__pill" aria-hidden="true"></span>${esc(l.nav[slug])}</a>`
+        : `<a class="site-nav__link" href="${href(l, slug)}">${esc(l.nav[slug])}</a>`,
+    ).join('');
     return `<a class="skip" href="#converter">${esc(l.ui.skip)}</a>
-<header class="site-header">
-  <div class="site-header__row wrap">
-    <a class="site-brand" href="${href(l, HOME)}"><span class="brand__dot"></span>Convertly</a>
-    <div class="site-header__tools" data-header-tools>
-      <a class="btn btn--primary btn--sm site-header__cta" href="${STORE_URL}" ${EXTERNAL}>${esc(l.ui.headerCta)}</a>
-    </div>
+<header class="site-header wrap">
+  <a class="site-brand" href="${href(l, HOME)}"><span class="brand__dot"></span>Convertly</a>
+  <nav class="site-nav" aria-label="${esc(l.ui.tools)}"><div class="site-nav__track">${links}</div></nav>
+  <div class="site-header__tools" data-header-tools>
+    <a class="btn btn--primary btn--sm site-header__cta" href="${STORE_URL}" ${EXTERNAL}>${esc(l.ui.headerCta)}</a>
   </div>
-  <nav class="site-nav wrap" aria-label="${esc(l.ui.tools)}"><div class="site-nav__track">${links}</div></nav>
 </header>`;
   }
 
@@ -220,7 +221,9 @@ ${header(l, slug)}
   </article>
   <section class="faq wrap" aria-labelledby="faq-title">
     <h2 id="faq-title">${esc(l.ui.faqTitle)}</h2>
+    <div class="faq__list">
     ${faq}
+    </div>
   </section>
 </main>
 ${footer(l, slug)}

@@ -1,16 +1,19 @@
 /* Website layout around the converter (site/render.ts). The converter keeps its
    own look from src/ui/styles/app.css (loaded first); this file places it in a
-   page and styles the text around it with the same tokens. */
+   page and styles the text around it with the same tokens. Every block shares
+   one width and one centre line. */
 
 .site {
+  --site-w: 1120px;
+  --site-pad: 24px;
   line-height: 1.5;
 }
 .site main { display: block; }
 .wrap {
   width: 100%;
-  max-width: 880px;
+  max-width: calc(var(--site-w) + 2 * var(--site-pad));
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--site-pad);
 }
 .site a { color: inherit; }
 .site h1,
@@ -29,25 +32,39 @@
 }
 .skip:focus { left: 8px; }
 
-/* ---- Header: brand, converter tools (support, theme), store button; tool links ---- */
-.site-header { padding-top: 12px; }
-.site-header__row {
-  display: flex;
+/* Going to another tool: the lit pill slides to its new place and the rest of
+   the page crossfades (cross-document view transition, Chromium; elsewhere the
+   page just loads). */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+::view-transition-group(site-nav-pill) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ---- Header: brand · tool links · converter tools (support, theme) + store ---- */
+.site-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 8px;
-  min-height: 52px;
+  gap: 12px 16px;
+  padding-top: 16px;
+  padding-bottom: 8px;
 }
 .site-brand {
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-right: auto;
   font-size: var(--fs-body-lg);
   font-weight: var(--fw-bold);
   letter-spacing: var(--ls-snug);
   text-decoration: none;
+  white-space: nowrap;
 }
 .site-header__tools {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -58,10 +75,11 @@
   white-space: nowrap;
 }
 
-/* Tool links: the converter's segmented-bar look; the current page is the lit segment. */
+/* Tool links: the converter's segmented-bar look. */
 .site-nav {
   display: flex;
-  margin-top: 10px;
+  justify-content: center;
+  min-width: 0;
 }
 .site-nav__track {
   display: flex;
@@ -76,6 +94,8 @@
 }
 .site-nav__track::-webkit-scrollbar { display: none; }
 .site-nav__link {
+  position: relative;
+  isolation: isolate;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -89,29 +109,34 @@
   white-space: nowrap;
   transition: color var(--dur-base) var(--ease-emphasis), background var(--dur-fast);
 }
-.site-nav__link:hover { color: var(--text-primary) !important; }
-.site-nav__link[aria-current="page"] {
+.site-nav__link:hover { color: var(--text-primary) !important; background: var(--surface-hover); }
+.site-nav__link[aria-current="page"] { color: #fff !important; background: none; }
+.site-nav__pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background: var(--accent);
-  color: #fff !important;
+  view-transition-name: site-nav-pill;
 }
 
 /* ---- Hero ---- */
 .hero {
-  padding-top: 36px;
+  padding-top: 40px;
   padding-bottom: 18px;
   text-align: center;
 }
 .hero h1 {
   max-width: 16em;
   margin: 0 auto;
-  font-size: clamp(30px, 5.2vw, 44px);
-  line-height: 1.12;
+  font-size: clamp(30px, 5.2vw, 48px);
+  line-height: 1.1;
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
 .hero__lead {
-  max-width: 34em;
+  max-width: 36em;
   margin: 14px auto 0;
   color: var(--text-secondary);
   font-size: var(--fs-body-lg);
@@ -138,12 +163,25 @@
 }
 .hero__facts svg { width: 13px; height: 13px; fill: var(--accent); }
 
-/* ---- The converter: natural height inside the page instead of a fixed window ---- */
+/* ---- The converter: page width and natural height instead of a fixed window ---- */
 .converter { min-height: 300px; }
+.converter .content,
+.converter .actionbar__inner {
+  max-width: calc(var(--site-w) + 2 * var(--site-pad));
+  padding-left: var(--site-pad);
+  padding-right: var(--site-pad);
+}
 .converter .content {
   overflow: visible;
   padding-top: 8px;
+  padding-bottom: 0;
 }
+.converter .actionbar__warn {
+  width: calc(100% - 2 * var(--site-pad));
+  max-width: var(--site-w);
+}
+/* A slot whose card is hidden (no files yet) takes no gap under the drop area. */
+.converter [data-slot]:not(:has(> :not([hidden]))) { display: none; }
 .converter .dropzone { min-height: 260px; }
 .converter .dropzone--compact { min-height: 0; }
 /* Convert stays reachable while the list is long: the bar sticks to the bottom
@@ -152,30 +190,37 @@
   position: sticky;
   bottom: 0;
   z-index: 20;
+  margin-top: 16px;
 }
 .converter__noscript {
   margin: 0 auto;
-  max-width: 880px;
+  max-width: var(--site-w);
   padding: 40px 20px;
   text-align: center;
   color: var(--text-secondary);
 }
 .site-offer .btn { flex-shrink: 0; }
 
-/* ---- Extension call to action ---- */
-.cta {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 20px 24px;
-  margin-top: 24px;
-  padding: 24px 28px;
+/* ---- Cards: the converter's group tile ---- */
+.cta,
+.article section,
+.faq__item {
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow-tile);
+}
+
+/* ---- Extension call to action ---- */
+.cta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 20px 28px;
+  margin-top: 28px;
+  padding: 26px 32px;
 }
 .cta__icon {
   width: 64px;
@@ -188,6 +233,7 @@
   letter-spacing: var(--ls-snug);
 }
 .cta__body p {
+  max-width: 48em;
   margin: 6px 0 0;
   color: var(--text-secondary);
   font-size: var(--fs-sm);
@@ -195,7 +241,7 @@
 .cta__points {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: 6px 18px;
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
@@ -209,7 +255,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 220px;
+  max-width: 240px;
 }
 .cta__action .btn {
   padding: 14px 22px;
@@ -226,25 +272,23 @@
   line-height: 1.35;
 }
 
-/* ---- Article and FAQ ---- */
+/* ---- Article: a two-column grid of cards ---- */
 .article {
-  margin-top: 48px;
   display: grid;
-  gap: 28px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
 }
-.article section,
-.faq > * { max-width: 720px; }
-.article h2,
-.faq h2 {
+.article section { padding: 24px 28px; }
+.article h2 {
   margin: 0 0 8px;
-  font-size: var(--fs-h2);
-  line-height: 1.25;
+  font-size: 19px;
+  line-height: 1.3;
   letter-spacing: var(--ls-snug);
 }
 .article p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: var(--fs-body);
   text-wrap: pretty;
 }
 .article a,
@@ -256,18 +300,30 @@
 [data-theme="dark"] .article a,
 [data-theme="dark"] .faq a { color: color-mix(in srgb, var(--accent) 55%, white); }
 
-.faq { margin-top: 48px; }
-.faq h2 { margin-bottom: 14px; }
-.faq__item {
-  border-bottom: 1px solid var(--border-subtle);
+/* ---- FAQ: centred title over two columns of cards ---- */
+.faq { margin-top: 56px; }
+.faq h2 {
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: var(--fs-h2);
+  letter-spacing: var(--ls-snug);
 }
-.faq__item:first-of-type { border-top: 1px solid var(--border-subtle); }
+.faq__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px 16px;
+}
+.faq__item {
+  border-radius: var(--r-tile);
+  padding: 0 22px;
+}
 .faq__item summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 2px;
+  padding: 18px 0;
   font-weight: var(--fw-semi);
   cursor: pointer;
   list-style: none;
@@ -286,19 +342,19 @@
 }
 .faq__item[open] summary::after { transform: translateY(2px) rotate(-135deg); }
 .faq__item p {
-  margin: -4px 0 16px;
-  padding: 0 2px;
+  margin: -6px 0 18px;
   color: var(--text-secondary);
 }
 
-/* ---- Footer ---- */
+/* ---- Footer: centred ---- */
 .site-footer {
-  margin-top: 56px;
+  margin-top: 64px;
   padding-bottom: 36px;
   color: var(--text-secondary);
   font-size: var(--fs-sm);
+  text-align: center;
 }
-/* The rule sits inside the padding so it lines up with the text. */
+/* The rule sits inside the padding so it lines up with the blocks above. */
 .site-footer::before {
   content: '';
   display: block;
@@ -313,7 +369,8 @@
 .site-footer__langs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  justify-content: center;
+  gap: 8px 20px;
   margin: 0 0 12px;
 }
 .site-footer__tools a { color: var(--text-primary); font-weight: var(--fw-medium); }
@@ -325,15 +382,17 @@
 
 /* ---- Text-only pages (privacy) ---- */
 .article--page {
-  margin-top: 32px;
-  gap: 14px;
+  display: block;
+  max-width: calc(760px + 2 * var(--site-pad));
+  margin-top: 40px;
 }
-.article--page > * { max-width: 720px; }
 .article--page h1 {
-  margin: 0 0 6px;
+  margin: 0 0 18px;
+  text-align: center;
   font-size: var(--fs-h1);
   letter-spacing: -0.02em;
 }
+.article--page p { margin: 0 0 14px; }
 
 /* ---- 404 ---- */
 .notfound__tools {
@@ -347,8 +406,17 @@
 }
 .notfound__tools .btn { text-decoration: none; background: var(--surface-toggle-off); }
 
-/* ---- Narrow screens ---- */
-@media (max-width: 720px) {
+/* ---- Narrower screens ---- */
+/* Tool links drop to their own centred row under brand and buttons. */
+@media (max-width: 1080px) {
+  .site-header { grid-template-columns: 1fr auto; }
+  .site-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+@media (max-width: 760px) {
+  .site { --site-pad: 16px; }
   .cta {
     grid-template-columns: auto 1fr;
     padding: 20px;
@@ -359,6 +427,9 @@
     max-width: none;
   }
   .cta__action .btn { width: 100%; }
+  .article,
+  .faq__list { grid-template-columns: minmax(0, 1fr); }
+  .article section { padding: 20px; }
 }
 @media (max-width: 520px) {
   .site-header__cta { display: none; }

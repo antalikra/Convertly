@@ -20,6 +20,14 @@ function sitePages(pages: SitePage[]): Plugin {
     config: () => ({ build: { rollupOptions: { input: [...byId.keys()] } } }),
     resolveId: (id) => (byId.has(id) ? id : undefined),
     load: (id) => byId.get(id)?.html,
+    // The entry script blocks the first frame (it's small and same-origin), so
+    // the converter is already mounted when the page shows: nothing jumps in,
+    // and the slide from another page captures it too.
+    transformIndexHtml: {
+      order: 'post',
+      handler: (html) =>
+        html.replace('<script type="module" crossorigin', '<script type="module" blocking="render" crossorigin'),
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = (req.url ?? '').split('?')[0];
