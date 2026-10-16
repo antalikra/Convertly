@@ -1,6 +1,6 @@
 import { Controller, type AppState } from '@app/controller';
 import { LOSSY_FORMATS, inputCategory, type Category } from '@core/types';
-import type { ThemeMode } from '@infra/settings';
+import type { Settings, ThemeMode } from '@infra/settings';
 import { formatBytes } from '@shared/format';
 import { createDropzone, type DropzoneView } from './components/Dropzone';
 import { createOptionsPanel } from './components/OptionsPanel';
@@ -21,7 +21,19 @@ const opKey = (id: string) => `op${id[0].toUpperCase()}${id.slice(1)}`;
 
 /** Top-level tabs. View filter only: tabs change what's shown; Convert / ZIP /
  *  Clear still act on ALL files at once (the controller stays tab-agnostic). */
-type Tab = 'media' | 'pdf';
+export type Tab = 'media' | 'pdf';
+
+/** How the converter is embedded. The extension window passes nothing. */
+export interface MountOptions {
+  /** Settings laid over the saved ones at start (see Controller.init). */
+  preset?: Partial<Settings>;
+  /** Workspace tab to open on. */
+  tab?: Tab;
+  /** The extension's Chrome Web Store page. Default: the installed extension's own listing. */
+  storeUrl?: string;
+  /** Show the one-time rating ask. Off on the website, where nothing is installed yet. */
+  rateAsk?: boolean;
+}
 
 /** Document with the (still-not-in-lib.dom) View Transitions API, used for the
  *  theme crossfade. Optional so we can feature-detect and fall back. */
@@ -61,9 +73,9 @@ function dropzoneView(tab: Tab, full: boolean): DropzoneView {
 }
 
 /** The store page where people leave a rating (the installed item's id is its store id). */
-function reviewUrl(): string {
+function reviewUrl(storeUrl?: string): string {
   const id = globalThis.chrome?.runtime?.id ?? '';
-  return `https://chromewebstore.google.com/detail/${id}/reviews`;
+  return `${storeUrl ?? `https://chromewebstore.google.com/detail/${id}`}/reviews`;
 }
 
 /** Which tab a job belongs to (unsupported files fall under Media). */
@@ -95,15 +107,17 @@ const CLOSE_ICON =
 const HEART_ICON =
   '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.3C.6 8.6 2.2 5.5 5.3 5.5c1.9 0 3.3 1.1 4.7 2.9 1.4-1.8 2.8-2.9 4.7-2.9 3.1 0 4.7 3.1 3.3 6.2C19.5 16.4 12 21 12 21z"/></svg>';
 
-/** Mounts the full converter UI into `root` (runs in the persistent window). */
-export function mountApp(root: HTMLElement): Controller {
+/** Mounts the full converter UI into `root` (the extension window, or a website page). */
+export function mountApp(root: HTMLElement, mount: MountOptions = {}): Controller {
   // Default to dark immediately so the tokens resolve before settings load.
   document.body.setAttribute('data-theme', 'dark');
 
   const controller = new Controller();
 
   // Active workspace tab. Declared early so option handlers can read it.
-  let activeTab: Tab = 'media';
+  let activeTab: Tab = mount.tab ?? 'media';
+  const storeReviews = reviewUrl(mount.storeUrl);
+  const rateAsk = mount.rateAsk ?? true;
 
   root.innerHTML = `
     <div class="shell">
@@ -119,7 +133,7 @@ export function mountApp(root: HTMLElement): Controller {
           <button class="btn btn--icon btn--ghost" data-support-btn type="button" title="${t('support')}" aria-label="${t('support')}">${HEART_ICON}</button>
           <div class="support__menu">
             <span class="support__title">${t('supportTitle')}</span>
-            <a class="support__link" href="${reviewUrl()}" target="_blank" rel="noopener noreferrer">${t('rateLink')}</a>
+            <a class="support__link" href="${storeReviews}" target="_blank" rel="noopener noreferrer">${t('rateLink')}</a>
             <a class="support__link" href="https://ko-fi.com/antalikra" target="_blank" rel="noopener noreferrer">☕ Ko-fi</a>
             <a class="support__link" href="https://www.paypal.com/donate/?hosted_button_id=AXQ9EVTZL6TDA" target="_blank" rel="noopener noreferrer">PayPal</a>
           </div>
@@ -137,7 +151,7 @@ export function mountApp(root: HTMLElement): Controller {
         <div class="notice" data-notice hidden></div>
         <div class="notice notice--rate" data-rate hidden>
           <span class="notice__text">${t('rateAsk')}</span>
-          <a class="btn btn--sm btn--primary" data-rate-go href="${reviewUrl()}" target="_blank" rel="noopener noreferrer">${t('rateButton')}</a>
+          <a class="btn btn--sm btn--primary" data-rate-go href="${storeReviews}" target="_blank" rel="noopener noreferrer">${t('rateButton')}</a>
           <button class="btn btn--icon btn--ghost" data-rate-close type="button" title="${t('close')}" aria-label="${t('close')}">${CLOSE_ICON}</button>
         </div>
         <div data-slot="dropzone"></div>
@@ -282,7 +296,7 @@ export function mountApp(root: HTMLElement): Controller {
   let wasConverting = false;
 
   controller.subscribe((state) => render(state));
-  void controller.init();
+  void controller.init(mount.preset);
 
   function render(state: AppState): void {
     document.body.setAttribute('data-theme', state.settings.theme);
@@ -292,6 +306,7 @@ export function mountApp(root: HTMLElement): Controller {
     noticeEl.textContent = state.notice ? t('limitNotice', state.notice.max, state.notice.skipped) : '';
     // Asked once, after a few batches that worked — never in the middle of one.
     rateEl.hidden =
+      !rateAsk ||
       state.converting ||
       state.settings.ratePromptDone ||
       state.settings.successfulRuns < RATE_AFTER_RUNS;

@@ -1,0 +1,75 @@
+# Builds the website (site/ + the converter from src/), tests it, and deploys
+# site-dist/ to GitHub Pages. Needs Settings → Pages → Source: GitHub Actions.
+# Until EXTENSION_ID is filled in site/config.ts, runs stop after the check job,
+# so nothing is built or deployed with placeholder store links.
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'src/**'
+      - 'public/icons/**'
+      - 'store/marquee-1400x560.png'
+      - 'tests/web/**'
+      - 'tests/e2e/**'
+      - 'vite.web.config.ts'
+      - 'playwright.web.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.store.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: store
+        run: |
+          if grep -qE "^export const EXTENSION_ID = '[a-p]{32}';" site/config.ts; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::site/config.ts has no Chrome Web Store id yet: the website is not built or deployed."
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+      - run: npx playwright install --with-deps --only-shell chromium
+      - run: npm run test:web
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site-dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -130,8 +130,10 @@ export class Controller {
   /** Live control for the in-flight batch (cancel/pause). Reset per convertAll. */
   private control: RunControl = { cancelled: false, paused: false, resume: null };
 
-  async init(): Promise<void> {
-    this.state.settings = await loadSettings();
+  /** Loads saved settings. `preset` is laid over them for this session (a website
+   *  page's task, e.g. HEIC → PNG); it is saved only once the user changes something. */
+  async init(preset: Partial<Settings> = {}): Promise<void> {
+    this.state.settings = { ...(await loadSettings()), ...preset };
     this.emit();
   }
 

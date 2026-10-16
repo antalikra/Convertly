@@ -105,15 +105,42 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = 'convertly.settings';
 
-/** Thin wrapper over chrome.storage.local. Falls back to defaults outside the
- *  extension context (e.g. vitest) so callers never have to guard. */
+/** localStorage on the website build; undefined where there is none (vitest) or
+ *  it is blocked (privacy settings throw on access). */
+function webStorage(): Storage | undefined {
+  try {
+    const s = globalThis.localStorage;
+    return typeof s?.getItem === 'function' ? s : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Thin wrapper over chrome.storage.local. The website build (no chrome.*) keeps
+ *  settings in localStorage; with neither (vitest) it falls back to defaults so
+ *  callers never have to guard. */
 export async function loadSettings(): Promise<Settings> {
-  if (!globalThis.chrome?.storage?.local) return { ...DEFAULT_SETTINGS };
-  const got = await chrome.storage.local.get(KEY);
-  return { ...DEFAULT_SETTINGS, ...(got[KEY] as Partial<Settings> | undefined) };
+  if (globalThis.chrome?.storage?.local) {
+    const got = await chrome.storage.local.get(KEY);
+    return { ...DEFAULT_SETTINGS, ...(got[KEY] as Partial<Settings> | undefined) };
+  }
+  const web = webStorage();
+  if (!web) return { ...DEFAULT_SETTINGS };
+  try {
+    return { ...DEFAULT_SETTINGS, ...(JSON.parse(web.getItem(KEY) ?? '{}') as Partial<Settings>) };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-  if (!globalThis.chrome?.storage?.local) return;
-  await chrome.storage.local.set({ [KEY]: settings });
+  if (globalThis.chrome?.storage?.local) {
+    await chrome.storage.local.set({ [KEY]: settings });
+    return;
+  }
+  try {
+    webStorage()?.setItem(KEY, JSON.stringify(settings));
+  } catch {
+    /* quota or blocked storage: settings just don't persist */
+  }
 }

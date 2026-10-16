@@ -1,0 +1,368 @@
+/* Website layout around the converter (site/render.ts). The converter keeps its
+   own look from src/ui/styles/app.css (loaded first); this file places it in a
+   page and styles the text around it with the same tokens. */
+
+.site {
+  line-height: 1.5;
+}
+.site main { display: block; }
+.wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.site a { color: inherit; }
+.site h1,
+.site h2 { color: var(--text-primary); }
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #fff !important;
+  text-decoration: none;
+}
+.skip:focus { left: 8px; }
+
+/* ---- Header: brand, converter tools (support, theme), store button; tool links ---- */
+.site-header { padding-top: 12px; }
+.site-header__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-snug);
+  text-decoration: none;
+}
+.site-header__tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.site-header__cta {
+  margin-left: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Tool links: the converter's segmented-bar look; the current page is the lit segment. */
+.site-nav {
+  display: flex;
+  margin-top: 10px;
+}
+.site-nav__track {
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--surface-toggle-off);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-tile);
+}
+.site-nav__track::-webkit-scrollbar { display: none; }
+.site-nav__link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 13px;
+  border-radius: calc(var(--r-tile) - 4px);
+  color: var(--text-secondary) !important;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--dur-base) var(--ease-emphasis), background var(--dur-fast);
+}
+.site-nav__link:hover { color: var(--text-primary) !important; }
+.site-nav__link[aria-current="page"] {
+  background: var(--accent);
+  color: #fff !important;
+}
+
+/* ---- Hero ---- */
+.hero {
+  padding-top: 36px;
+  padding-bottom: 18px;
+  text-align: center;
+}
+.hero h1 {
+  max-width: 16em;
+  margin: 0 auto;
+  font-size: clamp(30px, 5.2vw, 44px);
+  line-height: 1.12;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.hero__lead {
+  max-width: 34em;
+  margin: 14px auto 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-lg);
+  text-wrap: pretty;
+}
+.hero__facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hero__facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+.hero__facts svg { width: 13px; height: 13px; fill: var(--accent); }
+
+/* ---- The converter: natural height inside the page instead of a fixed window ---- */
+.converter { min-height: 300px; }
+.converter .content {
+  overflow: visible;
+  padding-top: 8px;
+}
+.converter .dropzone { min-height: 260px; }
+.converter .dropzone--compact { min-height: 0; }
+/* Convert stays reachable while the list is long: the bar sticks to the bottom
+   of the window until the converter scrolls past. */
+.converter .actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+.converter__noscript {
+  margin: 0 auto;
+  max-width: 880px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.site-offer .btn { flex-shrink: 0; }
+
+/* ---- Extension call to action ---- */
+.cta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 20px 24px;
+  margin-top: 24px;
+  padding: 24px 28px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-card);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-tile);
+}
+.cta__icon {
+  width: 64px;
+  height: 64px;
+  align-self: start;
+}
+.cta__body h2 {
+  margin: 0;
+  font-size: var(--fs-h2);
+  letter-spacing: var(--ls-snug);
+}
+.cta__body p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+.cta__points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.cta__points li { display: inline-flex; align-items: center; gap: 6px; }
+.cta__points svg { width: 15px; height: 15px; fill: var(--accent); }
+.cta__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+}
+.cta__action .btn {
+  padding: 14px 22px;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semi);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cta__note {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* ---- Article and FAQ ---- */
+.article {
+  margin-top: 48px;
+  display: grid;
+  gap: 28px;
+}
+.article section,
+.faq > * { max-width: 720px; }
+.article h2,
+.faq h2 {
+  margin: 0 0 8px;
+  font-size: var(--fs-h2);
+  line-height: 1.25;
+  letter-spacing: var(--ls-snug);
+}
+.article p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-body);
+  text-wrap: pretty;
+}
+.article a,
+.faq a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+[data-theme="dark"] .article a,
+[data-theme="dark"] .faq a { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+.faq { margin-top: 48px; }
+.faq h2 { margin-bottom: 14px; }
+.faq__item {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.faq__item:first-of-type { border-top: 1px solid var(--border-subtle); }
+.faq__item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 2px;
+  font-weight: var(--fw-semi);
+  cursor: pointer;
+  list-style: none;
+}
+.faq__item summary::-webkit-details-marker { display: none; }
+.faq__item summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--text-secondary);
+  border-bottom: 2px solid var(--text-secondary);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--dur-base) var(--ease-emphasis);
+}
+.faq__item[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.faq__item p {
+  margin: -4px 0 16px;
+  padding: 0 2px;
+  color: var(--text-secondary);
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  margin-top: 56px;
+  padding-bottom: 36px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+/* The rule sits inside the padding so it lines up with the text. */
+.site-footer::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin-bottom: 24px;
+  background: var(--border-subtle);
+}
+.site-footer a { text-decoration: none; }
+.site-footer a:hover { color: var(--text-primary); text-decoration: underline; }
+.site-footer__tools,
+.site-footer__links,
+.site-footer__langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 12px;
+}
+.site-footer__tools a { color: var(--text-primary); font-weight: var(--fw-medium); }
+.site-footer__note {
+  margin: 4px 0 0;
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+
+/* ---- Text-only pages (privacy) ---- */
+.article--page {
+  margin-top: 32px;
+  gap: 14px;
+}
+.article--page > * { max-width: 720px; }
+.article--page h1 {
+  margin: 0 0 6px;
+  font-size: var(--fs-h1);
+  letter-spacing: -0.02em;
+}
+
+/* ---- 404 ---- */
+.notfound__tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0 40px;
+  padding: 0;
+  list-style: none;
+}
+.notfound__tools .btn { text-decoration: none; background: var(--surface-toggle-off); }
+
+/* ---- Narrow screens ---- */
+@media (max-width: 720px) {
+  .cta {
+    grid-template-columns: auto 1fr;
+    padding: 20px;
+  }
+  .cta__icon { width: 48px; height: 48px; }
+  .cta__action {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+  .cta__action .btn { width: 100%; }
+}
+@media (max-width: 520px) {
+  .site-header__cta { display: none; }
+  .hero { padding-top: 24px; }
+  .hero__lead { font-size: var(--fs-body); }
+  .converter .dropzone { min-height: 220px; }
+}

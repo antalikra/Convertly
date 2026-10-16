@@ -26,5 +26,5 @@
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": ["src", "tests", "vite.config.ts", "scripts"]
+  "include": ["src", "site", "tests", "vite.config.ts", "vite.web.config.ts", "playwright.web.config.ts", "scripts"]
 }

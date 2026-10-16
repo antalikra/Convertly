@@ -50,6 +50,23 @@ Load unpacked: `chrome://extensions` → Developer mode → Load unpacked → `d
 
 `npm run store` needs Windows with the HEIF and HEVC extensions (to encode the demo HEIC photos, see `scripts/lib/heic-encode.ps1`) and Google Chrome installed (its H.264 encoder writes the video).
 
+## Website
+
+The same converter also runs in a plain web page: a static site for GitHub Pages with one landing page per task (`/heic-to-jpg/`, also the site root, `/heic-to-png/`, `/heic-to-pdf/`, `/webp-to-jpg/`, `/merge-pdf/`, `/wav-to-mp3/`), each opening the converter preset for that task and linking to the Chrome Web Store listing.
+
+```bash
+npm run build:web     # typecheck + site build → site-dist/
+npm run test:web      # Playwright tests of the built site (vite preview, headless Chromium)
+npm run dev:web       # dev server
+npm run preview:web   # serve site-dist/ as GitHub Pages would
+```
+
+- Pages are generated from `site/pages.ts` (slug → converter preset) and `site/content/<lang>.ts` (titles, text, FAQ) by `site/render.ts`; `vite.web.config.ts` feeds them to Vite as virtual HTML entries and writes `sitemap.xml`, `robots.txt` and `og.png`. English is the default language at the site root; another language is one more file in `site/content/`, served under `/<lang>/`.
+- Settings are kept in `localStorage` (the extension uses `chrome.storage.local`). The converter follows the page's language.
+- Same promise as the extension: every file comes from the site itself, nothing is uploaded, no analytics, no cookies. A strict CSP meta tag (`default-src 'none'`, scripts and workers from the site only) is part of every page, and the tests fail on any CSP violation or request to another origin.
+- GitHub Pages can't send COOP/COEP headers, so the page isn't cross-origin-isolated and the AVIF encoder uses its single-threaded build (tested).
+- `site/config.ts` holds the site URL and the extension's Chrome Web Store id; while it is empty, local builds warn, CI builds fail and the deploy workflow (`.github/workflows/pages.yml`, Settings → Pages → Source: GitHub Actions) stops before building.
+
 ## Layout
 
 ```
@@ -61,7 +78,8 @@ src/
   core/                tool registry; one Tool per conversion in core/tools/
   infra/               decoders/encoders, PDF/DOCX rendering, downloads, settings
   i18n/                UI strings in 14 languages
-tests/                 unit tests; tests/e2e: Playwright tests of the built extension
+site/                  website: landing pages, their text, the page entry and styles
+tests/                 unit tests; tests/e2e: Playwright tests of the built extension; tests/web: of the website
 scripts/               build helpers, icons, locales, store assets
 store/                 store listing texts, privacy policy, screenshots, tiles, video
 ```

@@ -14,7 +14,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check": "npm audit --omit=dev --audit-level=high && npm run build && npm test && npm run test:e2e && npm run zip",
-    "store": "node scripts/store-assets.mjs"
+    "store": "node scripts/store-assets.mjs",
+    "build:web": "tsc --noEmit && vite build --config vite.web.config.ts",
+    "dev:web": "vite --config vite.web.config.ts",
+    "preview:web": "vite preview --config vite.web.config.ts",
+    "test:web": "playwright test --config playwright.web.config.ts"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
