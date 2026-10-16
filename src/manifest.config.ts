@@ -3,15 +3,19 @@ import pkg from '../package.json';
 
 // Manifest V3. Golden rule #2: minimal permissions. Files come from the user
 // via drag-drop / file picker, so no host permissions are requested.
+// Name, description and button title come from public/_locales (generated from
+// src/i18n by scripts/locales.mjs), so the store listing is localised too.
 export default defineManifest({
   manifest_version: 3,
-  name: 'Convertly — Image, Audio & Document Converter',
+  name: '__MSG_extName__',
+  short_name: 'Convertly',
   version: pkg.version,
-  description: pkg.description,
+  description: '__MSG_extDescription__',
+  default_locale: 'en',
   // No default_popup: the background worker opens a persistent window on click
   // (a dropdown popup closes on focus loss and would drop the user's files).
   action: {
-    default_title: 'Convertly — open converter',
+    default_title: '__MSG_actionTitle__',
   },
   background: {
     service_worker: 'src/background.ts',
@@ -32,10 +36,6 @@ export default defineManifest({
   content_security_policy: {
     extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
   },
-  web_accessible_resources: [
-    {
-      resources: ['app.html', 'assets/*'],
-      matches: ['<all_urls>'],
-    },
-  ],
+  // No web_accessible_resources: only the extension itself opens app.html, and
+  // exposing it would let any site detect that Convertly is installed.
 });

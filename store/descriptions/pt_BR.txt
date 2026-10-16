@@ -1,0 +1,26 @@
+Converta fotos HEIC do iPhone para JPG em segundos, direto no navegador. Nada é enviado: o Convertly converte os arquivos no seu próprio computador, então suas fotos e documentos continuam privados.
+
+COMO FUNCIONA
+1. Clique no ícone do Convertly na barra de ferramentas. Uma janela de conversão se abre.
+2. Solte nela suas fotos HEIC ou clique para escolhê-las.
+3. Clique em "Converter" e baixe os JPGs um a um ou todos de uma vez em um ZIP.
+
+POR QUE O CONVERTLY
+• Privado: os arquivos nunca saem do seu computador. Sem upload, sem conta, sem rastreamento.
+• Em lote: até 200 arquivos de cada vez, vários em paralelo.
+• Localização removida: as fotos convertidas não levam GPS nem outros dados EXIF.
+• Padrões sensatos: qualidade de 90%, sem diferença visível e arquivos bem menores que em 100%.
+• Grátis, sem marca d'água e sem cadastro. Funciona offline.
+• Disponível em 14 idiomas.
+
+MUITO ALÉM DO HEIC
+• Imagens: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF e SVG para JPG, PNG, WebP, AVIF, TIFF, BMP ou um único PDF. Ajuste de qualidade e tamanho.
+• Áudio: MP3, WAV, FLAC, M4A, AAC e OGG para MP3, WAV ou OGG. Cortar, mono e normalizar.
+• PDF: juntar, dividir, girar, comprimir, manter ou reordenar páginas, adicionar marca d'água ou números de página, converter para JPG, PNG, texto ou DOCX.
+• Word: DOCX para PDF, texto ou HTML (beta).
+
+PERMISSÕES
+Apenas "storage", para lembrar suas configurações. O Convertly não consegue ler os sites que você visita.
+
+Código aberto: https://github.com/antalikra/Convertly
+A decodificação de HEIC usa a libheif via heic-to, e a codificação de MP3 usa o LAME via lamejs (ambas LGPL-3.0, incluídas sem modificações).

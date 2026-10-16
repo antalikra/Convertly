@@ -1,0 +1,26 @@
+Converti le foto HEIC dell'iPhone in JPG in pochi secondi, direttamente nel browser. Non viene caricato nulla: Convertly converte i file sul tuo computer, quindi foto e documenti restano privati.
+
+COME FUNZIONA
+1. Fai clic sull'icona di Convertly nella barra degli strumenti. Si apre una finestra di conversione.
+2. Trascina dentro le foto HEIC oppure fai clic per sceglierle.
+3. Fai clic su «Converti» e scarica i JPG uno alla volta o tutti insieme in uno ZIP.
+
+PERCHÉ CONVERTLY
+• Privato: i file non lasciano mai il tuo computer. Nessun caricamento, nessun account, nessun tracciamento.
+• In blocco: fino a 200 file alla volta, più file in parallelo.
+• Posizione rimossa: le foto convertite non contengono GPS né altri dati EXIF.
+• Impostazioni sensate: qualità al 90%, nessuna differenza visibile e file molto più leggeri che al 100%.
+• Gratuito, senza filigrane e senza registrazione. Funziona offline.
+• Disponibile in 14 lingue.
+
+NON SOLO HEIC
+• Immagini: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF e SVG in JPG, PNG, WebP, AVIF, TIFF, BMP o un unico PDF. Controllo di qualità e dimensioni.
+• Audio: MP3, WAV, FLAC, M4A, AAC e OGG in MP3, WAV o OGG. Taglio, mono e normalizzazione.
+• PDF: unisci, dividi, ruota, comprimi, tieni o riordina le pagine, aggiungi filigrana o numeri di pagina, converti in JPG, PNG, testo o DOCX.
+• Word: DOCX in PDF, testo o HTML (beta).
+
+AUTORIZZAZIONI
+Solo «storage», per ricordare le impostazioni. Convertly non può leggere i siti che visiti.
+
+Open source: https://github.com/antalikra/Convertly
+La decodifica HEIC usa libheif tramite heic-to e la codifica MP3 usa LAME tramite lamejs (entrambe LGPL-3.0, incluse senza modifiche).

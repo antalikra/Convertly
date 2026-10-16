@@ -95,8 +95,8 @@ export interface AppState {
   converting: boolean;
   /** True while a running batch is paused (no new files start; in-flight finishes). */
   paused: boolean;
-  /** Transient message (e.g. file-limit hit); shown then cleared on next add/clear. */
-  notice?: string;
+  /** Transient notice (file limit hit); shown then cleared on next add/clear. The UI words it. */
+  notice?: { max: number; skipped: number };
 }
 
 /** Cooperative cancel/pause shared with the JobQueue worker pool. */
@@ -150,7 +150,7 @@ export class Controller {
     const accepted = files.length > room ? files.slice(0, Math.max(0, room)) : files;
     const notice =
       accepted.length < files.length
-        ? `Limit is ${MAX_FILES} files — skipped ${files.length - accepted.length}.`
+        ? { max: MAX_FILES, skipped: files.length - accepted.length }
         : undefined;
 
     const inputs = await Promise.all(accepted.map(toInputFile));
@@ -664,6 +664,14 @@ export class Controller {
       // leave the UI stuck in "Converting…".
       this.state = { ...this.state, converting: false, paused: false };
       this.emit();
+    }
+    // Count batches that produced something (the UI asks for a rating once, later on).
+    const produced = resetIds.some((id) => {
+      const j = this.state.jobs.find((x) => x.input.id === id);
+      return !!j && (!!j.outputs?.length || !!j.aggregated);
+    });
+    if (produced && !this.control.cancelled) {
+      await this.updateSettings({ successfulRuns: this.state.settings.successfulRuns + 1 });
     }
   }
 

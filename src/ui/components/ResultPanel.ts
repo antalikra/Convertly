@@ -1,4 +1,5 @@
 import { formatBytes } from '@shared/format';
+import { t, tn } from '../../i18n';
 
 const DL_ICON = '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></svg>';
 
@@ -24,7 +25,7 @@ export function createResultPanel(onDownload: (id: string) => void): ResultPanel
   const el = document.createElement('section');
   el.className = 'group';
   el.hidden = true;
-  el.innerHTML = `<h2>Result</h2><div class="filelist" data-rows></div>`;
+  el.innerHTML = `<h2>${t('result')}</h2><div class="filelist" data-rows></div>`;
   const rowsEl = el.querySelector<HTMLElement>('[data-rows]')!;
 
   function update(results: ResultView[]): void {
@@ -59,19 +60,19 @@ function row(r: ResultView, onDownload: (id: string) => void): HTMLElement {
   name.title = r.fileName;
   const meta = document.createElement('div');
   meta.className = 'fileitem__meta';
-  meta.textContent = `${r.sourceCount} files · ${formatBytes(r.sizeBytes)}`;
+  meta.textContent = `${tn('nFiles', r.sourceCount)} · ${formatBytes(r.sizeBytes)}`;
   info.append(name, meta);
 
   const badge = document.createElement('span');
   badge.className = 'badge badge--success';
-  badge.textContent = 'Done';
+  badge.textContent = t('stageDone');
 
   const actions = document.createElement('div');
   actions.className = 'fileitem__actions';
   const dl = document.createElement('button');
   dl.type = 'button';
   dl.className = 'btn btn--icon btn--ghost';
-  dl.title = 'Download';
+  dl.title = t('download');
   dl.innerHTML = DL_ICON;
   dl.addEventListener('click', () => onDownload(r.id));
   actions.append(dl);

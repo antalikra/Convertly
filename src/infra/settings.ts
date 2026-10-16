@@ -66,6 +66,10 @@ export interface Settings {
   /** DOCX → PDF mode (Beta). */
   docxMode: DocxMode;
   theme: ThemeMode;
+  /** Batches that finished with at least one converted file (drives the one-time rating ask). */
+  successfulRuns: number;
+  /** The rating ask was answered (rated or closed) — never shown again. */
+  ratePromptDone: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -76,7 +80,9 @@ export const DEFAULT_SETTINGS: Settings = {
   audioMono: false,
   audioNormalize: false,
   audioBitrate: 192,
-  quality: 1, // max quality by default (png = lossless)
+  // 90%: a JPG close in size to the iPhone HEIC it came from (100% makes it 2–3× bigger,
+  // with no visible gain). PNG stays lossless from 90% up (see infra/encode.ts).
+  quality: 0.9,
   resize: 1,
   resizeMode: 'percent',
   resizeMaxPx: 1920,
@@ -93,6 +99,8 @@ export const DEFAULT_SETTINGS: Settings = {
   docxOperation: 'topdf',
   docxMode: 'raster',
   theme: 'dark',
+  successfulRuns: 0,
+  ratePromptDone: false,
 };
 
 const KEY = 'convertly.settings';

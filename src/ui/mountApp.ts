@@ -7,11 +7,17 @@ import { createOptionsPanel } from './components/OptionsPanel';
 import { createFileList } from './components/FileList';
 import { createResultPanel } from './components/ResultPanel';
 import type { Job } from '@app/controller';
+import { t, tn } from '../i18n';
 import './styles/app.css';
 
 /** Show the CPU-freeze warning once a batch is at least this many files (AVIF
  *  warns at any count — its encoder is multi-threaded). */
 const HEAVY_BATCH = 10;
+/** Ask for a rating once this many batches have finished with at least one file converted. */
+const RATE_AFTER_RUNS = 3;
+
+/** i18n key of a document operation's label: 'tojpg' → 'opTojpg'. */
+const opKey = (id: string) => `op${id[0].toUpperCase()}${id.slice(1)}`;
 
 /** Top-level tabs. View filter only: tabs change what's shown; Convert / ZIP /
  *  Clear still act on ALL files at once (the controller stays tab-agnostic). */
@@ -27,20 +33,38 @@ const TAB_OF_CATEGORY: Record<Category, Tab> = {
   audio: 'media',
   document: 'pdf',
 };
-const TAB_LABEL: Record<Tab, string> = { media: 'Media', pdf: 'Documents' };
-const DROPZONE_VIEW: Record<Tab, DropzoneView> = {
-  media: {
-    title: 'Drop files here',
-    sub: 'Images: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF, SVG · Audio: MP3, WAV, FLAC, M4A, AAC, OGG',
-    accept: 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.svg,.m4a,.flac',
-  },
-  pdf: {
-    title: 'Drop PDF or DOCX files here',
-    sub: 'PDF · rotate / split / merge / to image / to text / to DOCX · DOCX → PDF (Beta)',
-    accept:
-      'application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  },
-};
+const TAB_LABEL: Record<Tab, string> = { media: 'tabMedia', pdf: 'tabDocs' };
+/** Dropzone per tab: `full` while the tab is empty, a slim "add more" bar once it has files. */
+function dropzoneView(tab: Tab, full: boolean): DropzoneView {
+  const accept =
+    tab === 'media'
+      ? 'image/*,audio/*,.heic,.heif,.avif,.tif,.tiff,.svg,.m4a,.flac'
+      : 'application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (!full) return { title: t('dropMore'), sub: t('dropClick'), formats: '', accept, compact: true, privacy: '' };
+  return tab === 'media'
+    ? {
+        title: t('dropMedia'),
+        sub: t('dropClick'),
+        formats: 'HEIC · HEIF · JPG · PNG · WebP · GIF · BMP · AVIF · TIFF · SVG · MP3 · WAV · FLAC · M4A · AAC · OGG',
+        accept,
+        compact: false,
+        privacy: t('privacyNote'),
+      }
+    : {
+        title: t('dropDocs'),
+        sub: t('dropClick'),
+        formats: t('dropDocsOps'),
+        accept,
+        compact: false,
+        privacy: t('privacyNote'),
+      };
+}
+
+/** The store page where people leave a rating (the installed item's id is its store id). */
+function reviewUrl(): string {
+  const id = globalThis.chrome?.runtime?.id ?? '';
+  return `https://chromewebstore.google.com/detail/${id}/reviews`;
+}
 
 /** Which tab a job belongs to (unsupported files fall under Media). */
 function tabOfJob(job: Job): Tab {
@@ -66,6 +90,8 @@ const MOON_ICON =
   '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-7.54-7.54C12.92 3.04 12.46 3 12 3z"/></svg>';
 const SUN_ICON =
   '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5 2 3h-4zm0 20-2-3h4zM2 12l3-2v4zm20 0-3 2v-4zM5 5l3 1-2 2zm14 14-3-1 2-2zM5 19l1-3 2 2zM19 5l-1 3-2-2z"/></svg>';
+const CLOSE_ICON =
+  '<svg viewBox="0 0 24 24"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.71l-1.42-1.42L9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.3-6.3z"/></svg>';
 const HEART_ICON =
   '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.3C.6 8.6 2.2 5.5 5.3 5.5c1.9 0 3.3 1.1 4.7 2.9 1.4-1.8 2.8-2.9 4.7-2.9 3.1 0 4.7 3.1 3.3 6.2C19.5 16.4 12 21 12 21z"/></svg>';
 
@@ -86,28 +112,34 @@ export function mountApp(root: HTMLElement): Controller {
         <div class="brand">
           <div>
             <h1 class="brand__name">Convertly</h1>
-            <p class="brand__tagline">Convert images & audio — on your device.</p>
+            <p class="brand__tagline">${t('tagline')}</p>
           </div>
         </div>
         <div class="support" data-support>
-          <button class="btn btn--icon btn--ghost" data-support-btn type="button" title="Support Convertly">${HEART_ICON}</button>
+          <button class="btn btn--icon btn--ghost" data-support-btn type="button" title="${t('support')}" aria-label="${t('support')}">${HEART_ICON}</button>
           <div class="support__menu">
-            <span class="support__title">Free &amp; local. Support development ♥</span>
+            <span class="support__title">${t('supportTitle')}</span>
+            <a class="support__link" href="${reviewUrl()}" target="_blank" rel="noopener noreferrer">${t('rateLink')}</a>
             <a class="support__link" href="https://ko-fi.com/antalikra" target="_blank" rel="noopener noreferrer">☕ Ko-fi</a>
             <a class="support__link" href="https://www.paypal.com/donate/?hosted_button_id=AXQ9EVTZL6TDA" target="_blank" rel="noopener noreferrer">PayPal</a>
           </div>
         </div>
-        <button class="btn btn--icon btn--ghost" data-theme type="button" title="Toggle theme"></button>
+        <button class="btn btn--icon btn--ghost" data-theme-btn type="button" title="${t('theme')}" aria-label="${t('theme')}"></button>
       </header>
       <div class="content">
         <div class="tabs" data-tabs>
-          <div class="seg seg--tabs" data-tabseg role="tablist" aria-label="Workspace">
+          <div class="seg seg--tabs" data-tabseg role="tablist" aria-label="${t('workspace')}">
             <span class="seg__pill no-anim"></span>
-            <button class="seg__btn" type="button" role="tab" data-tab="media">Media</button>
-            <button class="seg__btn" type="button" role="tab" data-tab="pdf">Documents</button>
+            <button class="seg__btn" type="button" role="tab" data-tab="media">${t('tabMedia')}</button>
+            <button class="seg__btn" type="button" role="tab" data-tab="pdf">${t('tabDocs')}</button>
           </div>
         </div>
         <div class="notice" data-notice hidden></div>
+        <div class="notice notice--rate" data-rate hidden>
+          <span class="notice__text">${t('rateAsk')}</span>
+          <a class="btn btn--sm btn--primary" data-rate-go href="${reviewUrl()}" target="_blank" rel="noopener noreferrer">${t('rateButton')}</a>
+          <button class="btn btn--icon btn--ghost" data-rate-close type="button" title="${t('close')}" aria-label="${t('close')}">${CLOSE_ICON}</button>
+        </div>
         <div data-slot="dropzone"></div>
         <div data-slot="options"></div>
         <div data-slot="list"></div>
@@ -115,17 +147,17 @@ export function mountApp(root: HTMLElement): Controller {
       </div>
       <footer class="actionbar" data-slot="actions" hidden>
         <div class="actionbar__warn" data-heavy-warn hidden>
-          ⚠ Large batches use every CPU core — the window may stutter or freeze briefly while it works. It still finishes.
+          ⚠ ${t('heavyWarn')}
         </div>
         <div class="actionbar__inner">
           <span class="actionbar__summary" data-summary></span>
           <div class="actionbar__buttons">
-            <button class="btn btn--ghost" data-clear type="button">Clear</button>
-            <button class="btn btn--ghost" data-zip type="button" hidden>Download ZIP</button>
-            <button class="btn btn--ghost" data-pause type="button" hidden>Pause</button>
-            <button class="btn btn--ghost" data-cancel type="button" hidden>Cancel</button>
-            <button class="btn btn--ghost" data-reconvert type="button" hidden>Reconvert all</button>
-            <button class="btn btn--primary btn--lg" data-convert type="button">Convert</button>
+            <button class="btn btn--ghost" data-clear type="button">${t('clear')}</button>
+            <button class="btn btn--ghost" data-zip type="button" hidden>${t('downloadZip')}</button>
+            <button class="btn btn--ghost" data-pause type="button" hidden>${t('pause')}</button>
+            <button class="btn btn--ghost" data-cancel type="button" hidden>${t('cancel')}</button>
+            <button class="btn btn--ghost" data-reconvert type="button" hidden>${t('reconvertAll')}</button>
+            <button class="btn btn--primary btn--lg" data-convert type="button">${t('convert')}</button>
           </div>
         </div>
       </footer>
@@ -194,9 +226,14 @@ export function mountApp(root: HTMLElement): Controller {
   const cancelBtn = root.querySelector<HTMLButtonElement>('[data-cancel]')!;
   const reconvertBtn = root.querySelector<HTMLButtonElement>('[data-reconvert]')!;
   const convertBtn = root.querySelector<HTMLButtonElement>('[data-convert]')!;
-  const themeBtn = root.querySelector<HTMLButtonElement>('[data-theme]')!;
+  const themeBtn = root.querySelector<HTMLButtonElement>('[data-theme-btn]')!;
   const noticeEl = root.querySelector<HTMLElement>('[data-notice]')!;
   const heavyWarn = root.querySelector<HTMLElement>('[data-heavy-warn]')!;
+  const rateEl = root.querySelector<HTMLElement>('[data-rate]')!;
+  // Either answer ends the ask for good: a rating given, or a "no".
+  const rateDone = () => void controller.updateSettings({ ratePromptDone: true });
+  root.querySelector('[data-rate-go]')!.addEventListener('click', rateDone);
+  root.querySelector('[data-rate-close]')!.addEventListener('click', rateDone);
 
   clearBtn.addEventListener('click', () => controller.clear());
   zipBtn.addEventListener('click', () => void controller.downloadAllZip());
@@ -252,7 +289,12 @@ export function mountApp(root: HTMLElement): Controller {
     themeBtn.innerHTML = state.settings.theme === 'dark' ? MOON_ICON : SUN_ICON;
 
     noticeEl.hidden = !state.notice;
-    noticeEl.textContent = state.notice ?? '';
+    noticeEl.textContent = state.notice ? t('limitNotice', state.notice.max, state.notice.skipped) : '';
+    // Asked once, after a few batches that worked — never in the middle of one.
+    rateEl.hidden =
+      state.converting ||
+      state.settings.ratePromptDone ||
+      state.settings.successfulRuns < RATE_AFTER_RUNS;
 
     // Lock option/tab controls while converting (changing them mid-run no-ops).
     document.body.classList.toggle('is-busy', state.converting);
@@ -266,15 +308,15 @@ export function mountApp(root: HTMLElement): Controller {
     for (const b of Array.from(tabSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
       const tab = b.dataset.tab as Tab;
       const n = tabJobs[tab].length;
-      b.textContent = n > 0 ? `${TAB_LABEL[tab]} (${n})` : TAB_LABEL[tab];
+      b.textContent = n > 0 ? `${t(TAB_LABEL[tab])} (${n})` : t(TAB_LABEL[tab]);
       const active = tab === activeTab;
       b.classList.toggle('seg__btn--active', active);
       b.setAttribute('aria-selected', String(active));
     }
     syncSegPill(tabSeg);
 
-    // Dropzone hint + picker filter follow the active tab.
-    dropzone.update(DROPZONE_VIEW[activeTab]);
+    // Dropzone hint + picker filter follow the active tab; it shrinks to a bar once the tab has files.
+    dropzone.update(dropzoneView(activeTab, visible.length === 0));
 
     // Empty state keys off the ACTIVE tab so its dropzone grows when it's empty.
     document.body.classList.toggle('is-empty', visible.length === 0);
@@ -364,7 +406,9 @@ export function mountApp(root: HTMLElement): Controller {
           job,
           // Media files pick an output format; document files pick an operation.
           options: category && !isDoc ? controller.availableOutputFormats(category) : [],
-          docOps: isDoc ? controller.docOperationsFor(job) : undefined,
+          docOps: isDoc
+            ? controller.docOperationsFor(job).map((o) => ({ id: o.id, label: t(opKey(o.id)) }))
+            : undefined,
           docOp: isDoc ? controller.docOperation(job) : undefined,
           target: controller.resolveTarget(job),
           isAggregate,
@@ -416,7 +460,7 @@ export function mountApp(root: HTMLElement): Controller {
     for (const a of state.aggregates) outBytes += a.output.blob.size;
 
     summary.textContent = state.converting
-      ? `${state.paused ? 'Paused' : 'Converting…'} ${done}/${total}`
+      ? t(state.paused ? 'paused' : 'converting', done, total)
       : describe(total, done, errors, origBytes, outBytes, controller.outputCount());
 
     // Warn about a possible UI freeze right by the Convert button (proactive,
@@ -432,12 +476,12 @@ export function mountApp(root: HTMLElement): Controller {
     clearBtn.hidden = state.converting;
     pauseBtn.hidden = !state.converting;
     cancelBtn.hidden = !state.converting;
-    pauseBtn.textContent = state.paused ? 'Resume' : 'Pause';
+    pauseBtn.textContent = t(state.paused ? 'resume' : 'pause');
 
     // Convert does only pending (new/changed) files; show the count when some are
     // already done so it's clear it won't redo them. Reconvert-all forces a redo.
     convertBtn.disabled = pending === 0;
-    convertBtn.textContent = done > 0 && pending > 0 ? `Convert ${pending} new` : 'Convert';
+    convertBtn.textContent = done > 0 && pending > 0 ? t('convertNew', pending) : t('convert');
     reconvertBtn.hidden = state.converting || done === 0;
     // ZIP makes sense once there are ≥2 output files (one split job can suffice).
     zipBtn.hidden = controller.outputCount() < 2;
@@ -454,12 +498,12 @@ function describe(
   outBytes: number,
   outFiles: number,
 ): string {
-  const parts = [`${total} file${total === 1 ? '' : 's'}`];
-  if (done) parts.push(`${done} done`);
-  if (errors) parts.push(`${errors} failed`);
+  const parts = [tn('nFiles', total)];
+  if (done) parts.push(t('nDone', done));
+  if (errors) parts.push(t('nFailed', errors));
   // When a job fans out (PDF split), the output count differs from the input
   // count — show it so "1 file" doesn't hide the 106 pages produced.
-  if (outFiles > done) parts.push(`${outFiles} files out`);
+  if (outFiles > done) parts.push(tn('nOut', outFiles));
   if (done && origBytes > 0) {
     const d = 1 - outBytes / origBytes;
     const pct = d >= 0 ? `−${Math.round(d * 100)}%` : `+${Math.round(-d * 100)}%`;

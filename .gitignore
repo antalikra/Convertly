@@ -5,3 +5,6 @@ release/
 .DS_Store
 tests/fixtures/*
 !tests/fixtures/.gitkeep
+test-results/
+playwright-report/
+.tmp/

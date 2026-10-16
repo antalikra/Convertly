@@ -4,15 +4,17 @@ import { formatBytes } from '@shared/format';
 import { createFormatSelect } from './FormatSelect';
 import { createOperationSelect, type OperationOption } from './OperationSelect';
 import { createGroupSelect } from './GroupSelect';
+import { t, tn } from '../../i18n';
 
 /** File-list section keys, in display order. `other` = unsupported inputs. */
 const GROUP_ORDER = ['image', 'audio', 'document', 'other'] as const;
 type Group = (typeof GROUP_ORDER)[number];
+/** i18n keys of the section headings. */
 const GROUP_LABEL: Record<Group, string> = {
-  image: 'Images',
-  audio: 'Audio',
-  document: 'Documents',
-  other: 'Other',
+  image: 'groupImages',
+  audio: 'groupAudio',
+  document: 'groupDocuments',
+  other: 'groupOther',
 };
 
 const groupOf = (v: JobView): Group => inputCategory(v.job.input) ?? 'other';
@@ -38,12 +40,13 @@ function reorder(container: HTMLElement, desired: HTMLElement[]): void {
   for (const node of desired) container.appendChild(node);
 }
 
+/** i18n keys of the row status badges. */
 const STAGE_LABEL: Record<ProgressStage, string> = {
-  queued: 'Queued',
-  decoding: 'Decoding',
-  encoding: 'Encoding',
-  done: 'Done',
-  error: 'Error',
+  queued: 'stageQueued',
+  decoding: 'stageDecoding',
+  encoding: 'stageEncoding',
+  done: 'stageDone',
+  error: 'stageError',
 };
 
 const DL_ICON = '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></svg>';
@@ -147,7 +150,7 @@ export function createFileList(cb: FileListCallbacks): FileListHandle {
       const list = byGroup.get(g);
       if (!list) continue;
       const s = ensureSection(g);
-      s.label.textContent = `${GROUP_LABEL[g]} (${list.length})`;
+      s.label.textContent = `${t(GROUP_LABEL[g])} (${list.length})`;
       for (const v of list) {
         const id = v.job.input.id;
         seen.add(id);
@@ -277,8 +280,8 @@ function createRow(
   // Drag handle (the only draggable part — keeps row controls clickable).
   const grip = document.createElement('span');
   grip.className = 'fileitem__grip';
-  grip.title = 'Drag to reorder';
-  grip.setAttribute('aria-label', 'Drag to reorder');
+  grip.title = t('dragToReorder');
+  grip.setAttribute('aria-label', t('dragToReorder'));
   grip.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
   grip.addEventListener('pointerdown', (e) => beginDrag(el, id, e));
 
@@ -326,12 +329,12 @@ function createRow(
   actions.className = 'fileitem__actions';
   // Expander (only shown for multi-output jobs) toggles the per-file list.
   let expanded = false;
-  const expand = iconBtn(CARET_ICON, 'Show files');
+  const expand = iconBtn(CARET_ICON, t('showFiles'));
   expand.classList.add('fileitem__expand');
   expand.hidden = true;
-  const dl = iconBtn(DL_ICON, 'Download');
+  const dl = iconBtn(DL_ICON, t('download'));
   dl.addEventListener('click', () => cb.onDownload(id));
-  const rm = iconBtn(RM_ICON, 'Remove');
+  const rm = iconBtn(RM_ICON, t('remove'));
   rm.addEventListener('click', () => cb.onRemove(id));
   actions.append(expand, dl, rm);
 
@@ -347,7 +350,7 @@ function createRow(
     expanded = !expanded;
     sublist.hidden = !expanded;
     expand.classList.toggle('is-open', expanded);
-    expand.title = expanded ? 'Hide files' : 'Show files';
+    expand.title = t(expanded ? 'hideFiles' : 'showFiles');
   });
 
   el.append(row, sublist);
@@ -365,7 +368,7 @@ function createRow(
       groupSelect.el.hidden = true;
     }
     const stage: ProgressStage = v.job.error ? 'error' : v.job.stage;
-    setStatus(status, stage, v.job.error);
+    setStatus(status, stage, v.job.error, v.target == null && !v.docOp);
 
     // Show output size + savings once converted. A 1→N job (split) reports the
     // file count + combined size instead of a per-file delta.
@@ -374,7 +377,7 @@ function createRow(
     const multi = !!outs && outs.length > 1;
     if (outs && outs.length > 1) {
       const total = outs.reduce((s, o) => s + o.blob.size, 0);
-      meta.textContent = `${outs.length} files · ${formatBytes(total)}`;
+      meta.textContent = `${tn('nFiles', outs.length)} · ${formatBytes(total)}`;
     } else if (outs && outs.length === 1) {
       const size = outs[0].blob.size;
       const d = orig > 0 ? 1 - size / orig : 0;
@@ -385,7 +388,7 @@ function createRow(
     }
     if (v.job.input.durationSec) meta.textContent += ` · ${fmtDuration(v.job.input.durationSec)}`;
     dl.hidden = !(outs && outs.length > 0);
-    dl.title = multi ? 'Download ZIP' : 'Download';
+    dl.title = t(multi ? 'downloadZip' : 'download');
 
     // Multi-output: offer the expander + (re)build the per-file list on change.
     expand.hidden = !multi;
@@ -421,18 +424,25 @@ function subRow(fileName: string, size: number, onDownload: () => void): HTMLEle
   const sz = document.createElement('span');
   sz.className = 'suboutput__size';
   sz.textContent = formatBytes(size);
-  const dl = iconBtn(DL_ICON, 'Download');
+  const dl = iconBtn(DL_ICON, t('download'));
   dl.addEventListener('click', onDownload);
   el.append(name, sz, dl);
   return el;
 }
 
-function setStatus(node: HTMLElement, stage: ProgressStage, error?: string): void {
+function setStatus(node: HTMLElement, stage: ProgressStage, error?: string, unsupported = false): void {
   node.className = '';
   node.removeAttribute('title');
+  if (unsupported) {
+    // Nothing can convert it, so it would sit at "Queued" forever: say so instead.
+    node.className = 'badge badge--error';
+    node.textContent = t('stageUnsupported');
+    node.title = t('unsupported');
+    return;
+  }
   if (stage === 'decoding' || stage === 'encoding') {
     node.className = 'spinner';
-    node.title = STAGE_LABEL[stage];
+    node.title = t(STAGE_LABEL[stage]);
     node.textContent = '';
     return;
   }
@@ -440,8 +450,9 @@ function setStatus(node: HTMLElement, stage: ProgressStage, error?: string): voi
   if (stage === 'done') node.classList.add('badge--success');
   else if (stage === 'error') node.classList.add('badge--error');
   else node.classList.add('badge--accent');
-  node.textContent = stage === 'error' ? 'Error' : STAGE_LABEL[stage];
-  if (error) node.title = error;
+  node.textContent = t(STAGE_LABEL[stage]);
+  // The library's own message is technical; lead with a plain sentence.
+  if (error) node.title = t('errorTip', error);
 }
 
 function iconBtn(svg: string, title: string): HTMLButtonElement {

@@ -57,9 +57,11 @@ body {
 /* The shell fills the window. The topbar + content are capped & centred so they
    don't stretch on a maximised window, but the action bar spans the FULL width
    (its inner row is capped to match). The dropzone grows to absorb spare height. */
+/* A fixed height, so .content scrolls and the action bar (Convert) stays on screen however
+   many files there are. */
 body.is-tab .shell {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
 }
 .topbar,
 .content {
@@ -192,6 +194,18 @@ body.is-tab .shell {
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
 }
+/* The one-time rating ask: calm accent tint, text then the two answers. */
+.notice--rate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 16px;
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--text-primary);
+}
+.notice__text { flex: 1; }
+.notice--rate a.btn { text-decoration: none; }
 
 /* ---- Group card (mockup .group) ---- */
 .group {
@@ -244,7 +258,7 @@ body.is-tab .shell {
 }
 .opt-input:focus { border-color: var(--accent); }
 .opt-input::placeholder { color: var(--text-tertiary); }
-.opt-input--num { min-width: 76px; width: 76px; }
+.opt-input--num { min-width: 92px; width: 92px; }
 .trim { display: flex; align-items: center; gap: 8px; }
 .trim__dash { color: var(--text-tertiary); }
 /* Right-aligned caption for a control row (e.g. the PDF → DOCX Beta note). */
@@ -277,6 +291,8 @@ body.is-tab .shell {
 /* In the empty state the dropzone grows to fill the window (no voids); once
    files are queued it returns to a fixed size and the list takes over. */
 body.is-empty .dropzone { flex: 1 1 auto; }
+/* The slot wrapper stays out of the layout, so the dropzone itself is the flex item that grows. */
+[data-slot="dropzone"] { display: contents; }
 .dropzone:hover { border-color: var(--accent); background: var(--input-bg-focus); }
 .dropzone:focus-visible { border-color: var(--accent); }
 .dropzone--active {
@@ -297,8 +313,35 @@ body.is-empty .dropzone { flex: 1 1 auto; }
   margin-bottom: 4px;
 }
 .dropzone__icon svg { width: 28px; height: 28px; fill: currentColor; }
+.dropzone__text { display: flex; flex-direction: column; gap: 4px; }
 .dropzone__title { font-size: var(--fs-body); font-weight: var(--fw-semi); color: var(--text-primary); }
 .dropzone__sub { font-size: var(--fs-sm); color: var(--text-secondary); }
+.dropzone__formats { font-size: var(--fs-sm); color: var(--text-tertiary, var(--text-secondary)); margin-top: 6px; max-width: 700px; }
+.dropzone__privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+.dropzone__privacy svg { width: 13px; height: 13px; fill: var(--accent); }
+/* Once the tab has files the drop area becomes a slim bar, so the list and options fit. */
+.dropzone--compact {
+  min-height: 0;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 12px 18px;
+  text-align: left;
+}
+.dropzone--compact .dropzone__icon { width: 36px; height: 36px; margin: 0; }
+.dropzone--compact .dropzone__icon svg { width: 20px; height: 20px; }
+.dropzone--compact .dropzone__text { flex-direction: row; align-items: baseline; gap: 8px; }
 
 /* ---- Segmented (horizontal; mockup uses .seg-v, deviated for narrow popup) ---- */
 .seg {

@@ -1,17 +1,20 @@
 {
   "name": "convertly",
-  "version": "0.2.0",
-  "description": "Convert images, audio, PDFs and Word files locally in your browser. Files never leave your device.",
+  "version": "1.0.0",
+  "description": "Convert iPhone HEIC photos to JPG in your browser. Also images, audio and PDF tools. Files never leave your device.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
-    "prebuild": "npm run clean",
+    "prebuild": "npm run clean && node scripts/locales.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "zip": "node scripts/zip.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "npm audit --omit=dev --audit-level=high && npm run build && npm test && npm run test:e2e && npm run zip",
+    "store": "node scripts/store-assets.mjs"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
@@ -21,15 +24,16 @@
     "fflate": "^0.8.2",
     "heic-to": "^1.1.14",
     "html2canvas": "^1.4.1",
-    "mammoth": "^1.12.0",
+    "mammoth": "^1.13.0",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^6.0.227",
+    "pdfjs-dist": "^6.4.299",
     "upng-js": "^2.1.0",
     "utif2": "^4.1.0",
     "wasm-media-encoders": "^0.7.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.28",
+    "@playwright/test": "1.63.0",
     "@types/chrome": "^0.0.270",
     "@types/node": "^22.7.4",
     "typescript": "^5.5.4",

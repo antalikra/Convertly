@@ -1,0 +1,26 @@
+iPhone HEIC fotoğraflarını saniyeler içinde JPG'ye dönüştürün, doğrudan tarayıcınızda. Hiçbir şey yüklenmez: Convertly dosyaları kendi bilgisayarınızda dönüştürür, fotoğraflarınız ve belgeleriniz gizli kalır.
+
+NASIL ÇALIŞIR
+1. Araç çubuğundaki Convertly simgesine tıklayın. Bir dönüştürücü penceresi açılır.
+2. HEIC fotoğraflarınızı içine bırakın ya da seçmek için tıklayın.
+3. "Dönüştür"e tıklayın, ardından JPG'leri tek tek ya da hepsini birden ZIP olarak indirin.
+
+NEDEN CONVERTLY
+• Gizli: dosyalar bilgisayarınızdan asla çıkmaz. Yükleme yok, hesap yok, izleme yok.
+• Toplu işlem: bir seferde 200 dosyaya kadar, birkaçı aynı anda.
+• Konum silinir: dönüştürülen fotoğraflarda GPS ya da başka EXIF verisi kalmaz.
+• Mantıklı varsayılanlar: %90 kalite; gözle görülür fark yok, dosyalar %100’e göre çok daha küçük.
+• Ücretsiz, filigransız, üyeliksiz. Çevrimdışı çalışır.
+• 14 dilde kullanılabilir.
+
+HEIC'TEN FAZLASI
+• Görseller: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF ve SVG'den JPG, PNG, WebP, AVIF, TIFF, BMP veya tek bir PDF'ye. Kalite ve boyut ayarı.
+• Ses: MP3, WAV, FLAC, M4A, AAC ve OGG'den MP3, WAV veya OGG'ye. Kırpma, mono ve normalleştirme.
+• PDF: birleştirme, bölme, döndürme, sıkıştırma, sayfa seçme veya sıralama, filigran ya da sayfa numarası ekleme, JPG, PNG, metin veya DOCX'e dönüştürme.
+• Word: DOCX'ten PDF, metin veya HTML'ye (beta).
+
+İZİNLER
+Yalnızca ayarlarınızı hatırlamak için "storage". Convertly ziyaret ettiğiniz web sitelerini okuyamaz.
+
+Açık kaynak: https://github.com/antalikra/Convertly
+HEIC çözme heic-to aracılığıyla libheif, MP3 kodlama ise lamejs aracılığıyla LAME kullanır (ikisi de LGPL-3.0, değiştirilmeden dahil edilmiştir).

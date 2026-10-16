@@ -1,0 +1,26 @@
+在浏览器里几秒钟就能把 iPhone 的 HEIC 照片转换成 JPG。不上传任何文件：Convertly 在你自己的电脑上完成转换，照片和文档始终保持私密。
+
+使用方法
+1. 点击工具栏中的 Convertly 图标，打开转换窗口。
+2. 把 HEIC 照片拖进窗口，或点击选择文件。
+3. 点击“转换”，然后逐个下载 JPG，或打包成 ZIP 一次下载。
+
+为什么选择 Convertly
+• 私密：文件从不离开你的电脑。无需上传，无需账号，没有跟踪。
+• 批量：一次最多 200 个文件，多个文件同时处理。
+• 去除位置信息：转换后的照片不含 GPS 及其他 EXIF 数据。
+• 合理的默认设置：90% 质量，肉眼看不出差别，文件比 100% 小得多。
+• 免费，无水印，无需注册。可离线使用。
+• 支持 14 种语言。
+
+不止 HEIC
+• 图片：HEIC、HEIF、JPG、PNG、WebP、GIF、BMP、AVIF、TIFF 和 SVG 转为 JPG、PNG、WebP、AVIF、TIFF、BMP 或单个 PDF。可调整质量和尺寸。
+• 音频：MP3、WAV、FLAC、M4A、AAC 和 OGG 转为 MP3、WAV 或 OGG。支持剪切、单声道和音量标准化。
+• PDF：合并、拆分、旋转、压缩、保留或重排页面、添加水印或页码，转换为 JPG、PNG、文本或 DOCX。
+• Word：DOCX 转 PDF、文本或 HTML（测试版）。
+
+权限
+仅使用 “storage” 来记住你的设置。Convertly 无法读取你访问的网站。
+
+开源：https://github.com/antalikra/Convertly
+HEIC 解码通过 heic-to 使用 libheif，MP3 编码通过 lamejs 使用 LAME（均为 LGPL-3.0，未经修改）。

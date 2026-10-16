@@ -7,6 +7,13 @@ const MIME: Partial<Record<FormatId, string>> = {
 };
 
 const DEFAULT_QUALITY = 0.9;
+/** PNG is lossless from this quality up; below it the palette shrinks with the slider. */
+export const PNG_LOSSLESS = 0.9;
+
+/** UPNG palette size for a quality (0 = lossless, full colour). */
+export function pngColors(quality: number): number {
+  return quality >= PNG_LOSSLESS ? 0 : Math.min(256, Math.max(2, Math.round(quality * 256)));
+}
 
 /**
  * Encode an ImageBitmap to the target raster format.
@@ -59,10 +66,11 @@ export async function encodeBlob(
 
   switch (format) {
     case 'png': {
-      // UPNG: lossless at quality 1, else quantise to a palette (smaller PNG,
-      // staying PNG). This is the "optimise PNG" path the canvas can't do.
+      // UPNG: lossless from PNG_LOSSLESS up (the default quality included), else
+      // quantise to a palette (smaller PNG, staying PNG) — the "optimise PNG" path
+      // the canvas can't do.
       const { default: UPNG } = await import('upng-js');
-      const colors = quality >= 1 ? 0 : Math.min(256, Math.max(2, Math.round(quality * 256)));
+      const colors = pngColors(quality);
       const rgba = imageData.data.buffer as ArrayBuffer;
       const buf = UPNG.encode([rgba], canvas.width, canvas.height, colors);
       return new Blob([buf], { type: 'image/png' });

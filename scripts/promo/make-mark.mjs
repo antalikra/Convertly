@@ -2,7 +2,7 @@
 // seam-free, for the promo tiles to <img>. Same coverage-union renderer as
 // scripts/make-icons.mjs (the arc + arrowheads are one mask → no junction seam,
 // which the two-shape SVG version showed). Output: scripts/promo/mark.png (320px,
-// transparent outside the squircle).
+// transparent outside the squircle). Used by scripts/store-assets.mjs.
 import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';

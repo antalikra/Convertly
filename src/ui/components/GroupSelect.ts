@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 const CARET = '<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>';
 
 export interface GroupSelectHandle {
@@ -75,13 +77,13 @@ export function createGroupSelect(
 
   function build(): void {
     const items = groups.map((g) =>
-      opt(`Group ${g}`, g === current, (e) => {
+      opt(t('group', g), g === current, (e) => {
         e.stopPropagation();
         close();
         if (g !== current) onChange(g);
       }),
     );
-    const add = opt('+ New group', false, (e) => {
+    const add = opt(t('newGroup'), false, (e) => {
       e.stopPropagation();
       close();
       onNew();

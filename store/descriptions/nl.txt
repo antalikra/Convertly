@@ -1,0 +1,26 @@
+Zet iPhone-HEIC-foto's in een paar seconden om naar JPG, gewoon in je browser. Er wordt niets geüpload: Convertly zet bestanden om op je eigen computer, dus je foto's en documenten blijven privé.
+
+ZO WERKT HET
+1. Klik op het Convertly-pictogram in de werkbalk. Er opent een omzetvenster.
+2. Sleep je HEIC-foto's erin of klik om ze te kiezen.
+3. Klik op 'Omzetten' en download de JPG's één voor één of allemaal tegelijk als ZIP.
+
+WAAROM CONVERTLY
+• Privé: bestanden verlaten je computer nooit. Geen upload, geen account, geen tracking.
+• In reeksen: tot 200 bestanden tegelijk, meerdere naast elkaar.
+• Locatie verwijderd: omgezette foto's bevatten geen GPS of andere EXIF-gegevens.
+• Verstandige standaard: 90% kwaliteit, geen zichtbaar verschil en veel kleinere bestanden dan bij 100%.
+• Gratis, zonder watermerk en zonder registratie. Werkt offline.
+• Beschikbaar in 14 talen.
+
+MEER DAN HEIC
+• Afbeeldingen: HEIC, HEIF, JPG, PNG, WebP, GIF, BMP, AVIF, TIFF en SVG naar JPG, PNG, WebP, AVIF, TIFF, BMP of één pdf. Kwaliteit en formaat instelbaar.
+• Audio: MP3, WAV, FLAC, M4A, AAC en OGG naar MP3, WAV of OGG. Inkorten, mono en normaliseren.
+• Pdf: samenvoegen, splitsen, draaien, comprimeren, pagina's bewaren of herschikken, watermerk of paginanummers toevoegen, omzetten naar JPG, PNG, tekst of DOCX.
+• Word: DOCX naar pdf, tekst of HTML (bèta).
+
+MACHTIGINGEN
+Alleen 'storage', om je instellingen te onthouden. Convertly kan de websites die je bezoekt niet lezen.
+
+Open source: https://github.com/antalikra/Convertly
+HEIC-decodering gebruikt libheif via heic-to en MP3-codering gebruikt LAME via lamejs (beide LGPL-3.0, ongewijzigd meegeleverd).

@@ -1,4 +1,5 @@
 import { ROTATE_ANGLES, PDF_SCALES, RESIZE_MAX, type Category, type FormatId } from '@core/types';
+import { t } from '../../i18n';
 
 const LABEL: Record<string, string> = {
   jpeg: 'JPG',
@@ -13,10 +14,11 @@ const LABEL: Record<string, string> = {
   pdf: 'PDF',
 };
 
+/** i18n keys; document rows aren't rendered as a format seg (PDF uses the operation bar). */
 const CAT_LABEL: Record<Category, string> = {
-  image: 'Image format',
-  audio: 'Audio format',
-  document: 'PDF', // document rows aren't rendered as a format seg (PDF uses the rotate control)
+  image: 'imageFormat',
+  audio: 'audioFormat',
+  document: 'pdfOps',
 };
 
 export interface FormatRow {
@@ -118,29 +120,29 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
   const el = document.createElement('section');
   el.className = 'group';
   el.innerHTML = `
-    <h2>Output</h2>
+    <h2>${t('output')}</h2>
     <div data-formats></div>
     <div class="group__row" data-quality-row>
-      <span class="group__label">Quality</span>
-      <input id="quality" type="range" min="0.1" max="1" step="0.05" aria-label="Quality" />
+      <span class="group__label">${t('quality')}</span>
+      <input id="quality" type="range" min="0.1" max="1" step="0.05" aria-label="${t('quality')}" />
       <span class="quality-val" data-quality-val></span>
     </div>
     <div class="group__row" data-resizemode-row>
-      <span class="group__label">Resize</span>
-      <div class="seg" data-resizemode-seg role="radiogroup" aria-label="Resize mode">
+      <span class="group__label">${t('resize')}</span>
+      <div class="seg" data-resizemode-seg role="radiogroup" aria-label="${t('resizeMode')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-resizemode="percent">Percent</button>
-        <button type="button" class="seg__btn" role="radio" data-resizemode="maxside">Max side</button>
+        <button type="button" class="seg__btn" role="radio" data-resizemode="percent">${t('percent')}</button>
+        <button type="button" class="seg__btn" role="radio" data-resizemode="maxside">${t('maxSide')}</button>
       </div>
     </div>
     <div class="group__row" data-resize-row>
       <span class="group__label"></span>
-      <input id="resize" type="range" min="0.25" max="1" step="0.05" aria-label="Resize" />
+      <input id="resize" type="range" min="0.25" max="1" step="0.05" aria-label="${t('resize')}" />
       <span class="quality-val" data-resize-val></span>
     </div>
     <div class="group__row" data-resizemax-row>
-      <span class="group__label">Max px</span>
-      <div class="seg" data-resizemax-seg role="radiogroup" aria-label="Max longest side (px)">
+      <span class="group__label">${t('maxPx')}</span>
+      <div class="seg" data-resizemax-seg role="radiogroup" aria-label="${t('maxPx')}">
         <span class="seg__pill no-anim"></span>
         ${RESIZE_MAX.map(
           (px) =>
@@ -149,32 +151,32 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       </div>
     </div>
     <div class="group__row" data-audiotrim-row style="display:none">
-      <span class="group__label">Trim (s)</span>
+      <span class="group__label">${t('trim')}</span>
       <div class="trim">
-        <input type="number" class="opt-input opt-input--num" data-trimstart min="0" step="0.1" placeholder="start" aria-label="Trim start seconds" />
+        <input type="number" class="opt-input opt-input--num" data-trimstart min="0" step="0.1" placeholder="${t('trimStart')}" aria-label="${t('trimStartAria')}" />
         <span class="trim__dash">–</span>
-        <input type="number" class="opt-input opt-input--num" data-trimend min="0" step="0.1" placeholder="end" aria-label="Trim end seconds" />
+        <input type="number" class="opt-input opt-input--num" data-trimend min="0" step="0.1" placeholder="${t('trimEnd')}" aria-label="${t('trimEndAria')}" />
       </div>
     </div>
     <div class="group__row" data-audioch-row style="display:none">
-      <span class="group__label">Channels</span>
-      <div class="seg" data-audioch-seg role="radiogroup" aria-label="Channels">
+      <span class="group__label">${t('channels')}</span>
+      <div class="seg" data-audioch-seg role="radiogroup" aria-label="${t('channels')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-audioch="stereo">Stereo</button>
-        <button type="button" class="seg__btn" role="radio" data-audioch="mono">Mono</button>
+        <button type="button" class="seg__btn" role="radio" data-audioch="stereo">${t('stereo')}</button>
+        <button type="button" class="seg__btn" role="radio" data-audioch="mono">${t('mono')}</button>
       </div>
     </div>
     <div class="group__row" data-audionorm-row style="display:none">
-      <span class="group__label">Normalize</span>
-      <div class="seg" data-audionorm-seg role="radiogroup" aria-label="Normalize">
+      <span class="group__label">${t('normalize')}</span>
+      <div class="seg" data-audionorm-seg role="radiogroup" aria-label="${t('normalize')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-audionorm="off">Off</button>
-        <button type="button" class="seg__btn" role="radio" data-audionorm="on">On</button>
+        <button type="button" class="seg__btn" role="radio" data-audionorm="off">${t('off')}</button>
+        <button type="button" class="seg__btn" role="radio" data-audionorm="on">${t('on')}</button>
       </div>
     </div>
     <div class="group__row" data-audiobitrate-row style="display:none">
-      <span class="group__label">Bitrate</span>
-      <div class="seg" data-audiobitrate-seg role="radiogroup" aria-label="MP3 bitrate">
+      <span class="group__label">${t('bitrate')}</span>
+      <div class="seg" data-audiobitrate-seg role="radiogroup" aria-label="${t('bitrate')}">
         <span class="seg__pill no-anim"></span>
         <button type="button" class="seg__btn" role="radio" data-audiobitrate="128">128</button>
         <button type="button" class="seg__btn" role="radio" data-audiobitrate="192">192</button>
@@ -184,55 +186,55 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     </div>
     <div class="group__row" data-pdfop-row>
       <span class="group__label">PDF</span>
-      <div class="seg" data-pdfop-seg role="radiogroup" aria-label="PDF operation (all files)">
+      <div class="seg" data-pdfop-seg role="radiogroup" aria-label="${t('pdfOps')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-op="rotate">Rotate</button>
-        <button type="button" class="seg__btn" role="radio" data-op="split">Split</button>
-        <button type="button" class="seg__btn" role="radio" data-op="merge">Merge</button>
+        <button type="button" class="seg__btn" role="radio" data-op="rotate">${t('segRotate')}</button>
+        <button type="button" class="seg__btn" role="radio" data-op="split">${t('segSplit')}</button>
+        <button type="button" class="seg__btn" role="radio" data-op="merge">${t('segMerge')}</button>
         <button type="button" class="seg__btn" role="radio" data-op="tojpg">JPG</button>
         <button type="button" class="seg__btn" role="radio" data-op="topng">PNG</button>
-        <button type="button" class="seg__btn" role="radio" data-op="totext">Text</button>
+        <button type="button" class="seg__btn" role="radio" data-op="totext">${t('segText')}</button>
         <button type="button" class="seg__btn" role="radio" data-op="todocx">DOCX</button>
-        <button type="button" class="seg__btn" role="radio" data-op="compress">Compress</button>
-        <button type="button" class="seg__btn" role="radio" data-op="pages">Pages</button>
-        <button type="button" class="seg__btn" role="radio" data-op="stamp">Stamp</button>
+        <button type="button" class="seg__btn" role="radio" data-op="compress">${t('segCompress')}</button>
+        <button type="button" class="seg__btn" role="radio" data-op="pages">${t('segPages')}</button>
+        <button type="button" class="seg__btn" role="radio" data-op="stamp">${t('segStamp')}</button>
       </div>
     </div>
     <div class="group__row" data-compress-hint-row style="display:none">
-      <span class="group__label">Compress</span>
-      <span class="group__hint">Rasterises pages — best for scanned/image PDFs; text PDFs may grow.</span>
+      <span class="group__label">${t('segCompress')}</span>
+      <span class="group__hint">${t('compressHint')}</span>
     </div>
     <div class="group__row" data-pagerange-row style="display:none">
-      <span class="group__label">Pages</span>
-      <input type="text" class="opt-input" data-pagerange placeholder="e.g. 1-3, 5, 8-10" aria-label="Pages to keep" />
+      <span class="group__label">${t('pages')}</span>
+      <input type="text" class="opt-input" data-pagerange placeholder="${t('pagesPlaceholder')}" aria-label="${t('pagesAria')}" />
     </div>
     <div class="group__row" data-stamp-row style="display:none">
-      <span class="group__label">Stamp text</span>
-      <input type="text" class="opt-input" data-stamptext placeholder="e.g. CONFIDENTIAL" aria-label="Stamp text" />
+      <span class="group__label">${t('stampText')}</span>
+      <input type="text" class="opt-input" data-stamptext placeholder="${t('stampPlaceholder')}" aria-label="${t('stampText')}" />
     </div>
     <div class="group__row" data-stamppos-row style="display:none">
-      <span class="group__label">Position</span>
-      <div class="seg" data-stamppos-seg role="radiogroup" aria-label="Stamp position">
+      <span class="group__label">${t('position')}</span>
+      <div class="seg" data-stamppos-seg role="radiogroup" aria-label="${t('position')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-stamppos="center">Center</button>
-        <button type="button" class="seg__btn" role="radio" data-stamppos="footer">Footer</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppos="center">${t('center')}</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppos="footer">${t('footer')}</button>
       </div>
     </div>
     <div class="group__row" data-stamppage-row style="display:none">
-      <span class="group__label">Page numbers</span>
-      <div class="seg" data-stamppage-seg role="radiogroup" aria-label="Page numbers">
+      <span class="group__label">${t('pageNumbers')}</span>
+      <div class="seg" data-stamppage-seg role="radiogroup" aria-label="${t('pageNumbers')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-stamppage="off">Off</button>
-        <button type="button" class="seg__btn" role="radio" data-stamppage="on">On</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppage="off">${t('off')}</button>
+        <button type="button" class="seg__btn" role="radio" data-stamppage="on">${t('on')}</button>
       </div>
     </div>
     <div class="group__row" data-pdfop-hint-row style="display:none">
-      <span class="group__label">To DOCX <span class="badge badge--accent badge--beta">Beta</span></span>
-      <span class="group__hint">Text only — tables, images and layout aren't kept.</span>
+      <span class="group__label">${t('toDocx')} <span class="badge badge--accent badge--beta">${t('beta')}</span></span>
+      <span class="group__hint">${t('toDocxHint')}</span>
     </div>
     <div class="group__row" data-rotate-row>
-      <span class="group__label">Rotation</span>
-      <div class="seg" data-rotate-seg role="radiogroup" aria-label="PDF rotation">
+      <span class="group__label">${t('rotation')}</span>
+      <div class="seg" data-rotate-seg role="radiogroup" aria-label="${t('rotation')}">
         <span class="seg__pill no-anim"></span>
         ${ROTATE_ANGLES.map(
           (a) =>
@@ -241,42 +243,42 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       </div>
     </div>
     <div class="group__row" data-combine-row>
-      <span class="group__label">Combine</span>
+      <span class="group__label">${t('combine')}</span>
       <div class="combine">
-        <button type="button" class="btn btn--sm" data-combine="one">All in one</button>
-        <button type="button" class="btn btn--sm" data-combine="separate">Each separate</button>
+        <button type="button" class="btn btn--sm" data-combine="one">${t('allInOne')}</button>
+        <button type="button" class="btn btn--sm" data-combine="separate">${t('eachSeparate')}</button>
       </div>
     </div>
     <div class="group__row" data-pdfpage-row>
-      <span class="group__label">Page</span>
-      <div class="seg" data-pdfpage-seg role="radiogroup" aria-label="PDF page size">
+      <span class="group__label">${t('page')}</span>
+      <div class="seg" data-pdfpage-seg role="radiogroup" aria-label="${t('page')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-pdfpage="fit">Fit</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfpage="fit">${t('fit')}</button>
         <button type="button" class="seg__btn" role="radio" data-pdfpage="a4">A4</button>
-        <button type="button" class="seg__btn" role="radio" data-pdfpage="letter">Letter</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfpage="letter">${t('letter')}</button>
       </div>
     </div>
     <div class="group__row" data-pdforient-row>
-      <span class="group__label">Orientation</span>
-      <div class="seg" data-pdforient-seg role="radiogroup" aria-label="PDF orientation">
+      <span class="group__label">${t('orientation')}</span>
+      <div class="seg" data-pdforient-seg role="radiogroup" aria-label="${t('orientation')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-pdforient="auto">Auto</button>
-        <button type="button" class="seg__btn" role="radio" data-pdforient="portrait">Portrait</button>
-        <button type="button" class="seg__btn" role="radio" data-pdforient="landscape">Landscape</button>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="auto">${t('auto')}</button>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="portrait">${t('portrait')}</button>
+        <button type="button" class="seg__btn" role="radio" data-pdforient="landscape">${t('landscape')}</button>
       </div>
     </div>
     <div class="group__row" data-pdfmargin-row>
-      <span class="group__label">Margin</span>
-      <div class="seg" data-pdfmargin-seg role="radiogroup" aria-label="PDF margin">
+      <span class="group__label">${t('margin')}</span>
+      <div class="seg" data-pdfmargin-seg role="radiogroup" aria-label="${t('margin')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-pdfmargin="0">None</button>
-        <button type="button" class="seg__btn" role="radio" data-pdfmargin="24">Small</button>
-        <button type="button" class="seg__btn" role="radio" data-pdfmargin="48">Large</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="0">${t('none')}</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="24">${t('small')}</button>
+        <button type="button" class="seg__btn" role="radio" data-pdfmargin="48">${t('large')}</button>
       </div>
     </div>
     <div class="group__row" data-scale-row>
-      <span class="group__label">Resolution</span>
-      <div class="seg" data-scale-seg role="radiogroup" aria-label="PDF render scale">
+      <span class="group__label">${t('resolution')}</span>
+      <div class="seg" data-scale-seg role="radiogroup" aria-label="${t('resolution')}">
         <span class="seg__pill no-anim"></span>
         ${PDF_SCALES.map(
           (s) =>
@@ -286,19 +288,19 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     </div>
     <div class="group__row" data-docxop-row>
       <span class="group__label">DOCX</span>
-      <div class="seg" data-docxop-seg role="radiogroup" aria-label="DOCX operation (all files)">
+      <div class="seg" data-docxop-seg role="radiogroup" aria-label="${t('docxOps')}">
         <span class="seg__pill no-anim"></span>
         <button type="button" class="seg__btn" role="radio" data-docxop="topdf">PDF</button>
-        <button type="button" class="seg__btn" role="radio" data-docxop="totext">Text</button>
+        <button type="button" class="seg__btn" role="radio" data-docxop="totext">${t('segText')}</button>
         <button type="button" class="seg__btn" role="radio" data-docxop="tohtml">HTML</button>
       </div>
     </div>
     <div class="group__row" data-docx-row>
-      <span class="group__label">DOCX → PDF <span class="badge badge--accent badge--beta">Beta</span></span>
-      <div class="seg" data-docx-seg role="radiogroup" aria-label="DOCX to PDF mode">
+      <span class="group__label">${t('docxToPdf')} <span class="badge badge--accent badge--beta">${t('beta')}</span></span>
+      <div class="seg" data-docx-seg role="radiogroup" aria-label="${t('docxToPdf')}">
         <span class="seg__pill no-anim"></span>
-        <button type="button" class="seg__btn" role="radio" data-docx="raster">Visual</button>
-        <button type="button" class="seg__btn" role="radio" data-docx="reflow">Text</button>
+        <button type="button" class="seg__btn" role="radio" data-docx="raster">${t('visual')}</button>
+        <button type="button" class="seg__btn" role="radio" data-docx="reflow">${t('segText')}</button>
       </div>
     </div>
   `;
@@ -469,7 +471,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
     const showPercent = v.showResize && v.resizeMode !== 'maxside';
     resizeRow.style.display = showPercent ? '' : 'none';
     resize.value = String(v.resize);
-    resizeVal.textContent = v.resize >= 1 ? 'Original' : `${Math.round(v.resize * 100)}%`;
+    resizeVal.textContent = v.resize >= 1 ? t('original') : `${Math.round(v.resize * 100)}%`;
     const showMax = v.showResize && v.resizeMode === 'maxside';
     resizemaxRow.style.display = showMax ? '' : 'none';
     if (showMax) {
@@ -492,11 +494,11 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
       if (audioMax > 0) {
         trimStart.max = String(Math.ceil(audioMax));
         trimEnd.max = String(Math.ceil(audioMax));
-        trimEnd.placeholder = `end ≤ ${Math.floor(audioMax)}`;
+        trimEnd.placeholder = t('trimEndMax', Math.floor(audioMax));
       } else {
         trimStart.removeAttribute('max');
         trimEnd.removeAttribute('max');
-        trimEnd.placeholder = 'end';
+        trimEnd.placeholder = t('trimEnd');
       }
       for (const b of Array.from(audiochSeg.querySelectorAll<HTMLButtonElement>('.seg__btn'))) {
         const active = (b.dataset.audioch === 'mono') === v.audioMono;
@@ -532,7 +534,7 @@ export function createOptionsPanel(h: OptionsHandlers): OptionsPanelHandle {
         if (b.dataset.op === 'merge') {
           b.classList.toggle('seg__btn--disabled', v.mergeDisabled);
           b.setAttribute('aria-disabled', String(v.mergeDisabled));
-          if (v.mergeDisabled) b.dataset.tip = 'Add at least one more PDF';
+          if (v.mergeDisabled) b.dataset.tip = t('mergeTip');
           else delete b.dataset.tip;
         }
       }
@@ -655,7 +657,7 @@ function formatRow(row: FormatRow, h: OptionsHandlers): HTMLElement {
 
   const label = document.createElement('span');
   label.className = 'group__label';
-  label.textContent = CAT_LABEL[row.category];
+  label.textContent = t(CAT_LABEL[row.category]);
 
   const seg = document.createElement('div');
   seg.className = 'seg';
