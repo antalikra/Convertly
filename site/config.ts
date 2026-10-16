@@ -9,7 +9,11 @@ export const SITE_URL = 'https://antalikra.github.io/Convertly/';
  *  builds warn, CI builds fail, so the site never goes out with dead store links. */
 export const EXTENSION_ID = 'pmjajocohhkleofcnmbconknhmfelhgn';
 
-export const STORE_URL = `https://chromewebstore.google.com/detail/${EXTENSION_ID || 'EXTENSION_ID'}`;
+/** Google Search Console ownership file (HTML file method): the build serves
+ *  /<name>.html with the content Google expects. Keep it, or ownership is lost. */
+export const GOOGLE_VERIFICATION = 'google141ab16e5967e561';
+
+export const STORE_URL =`https://chromewebstore.google.com/detail/${EXTENSION_ID || 'EXTENSION_ID'}`;
 
 export const REPO_URL = 'https://github.com/antalikra/Convertly';
 export const PRIVACY_URL = `${REPO_URL}/blob/main/store/PRIVACY.md`;

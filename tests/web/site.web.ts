@@ -3,7 +3,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import { SLUGS, type Slug } from '../../site/pages';
 import { en } from '../../site/content/en';
-import { STORE_URL } from '../../site/config';
+import { STORE_URL, GOOGLE_VERIFICATION } from '../../site/config';
 import { addFiles, convert, row, download, sample, MAGIC } from '../e2e/fixtures';
 import { png, wav, pdf, docx, jpegSize, pdfPages } from '../e2e/make';
 
@@ -157,6 +157,12 @@ test('every page links to the website’s own privacy page', async ({ site }) =>
   await expect(site).toHaveURL(/\/Convertly\/privacy\/$/);
   await expect(site.locator('h1')).toHaveText(en.privacy.h1);
   await expect(site.locator('.article--page p')).toHaveCount(en.privacy.body.length);
+});
+
+test('serves the Search Console ownership file byte for byte', async ({ request }) => {
+  const res = await request.get(`${GOOGLE_VERIFICATION}.html`);
+  expect(res.status()).toBe(200);
+  expect(await res.text()).toBe(`google-site-verification: ${GOOGLE_VERIFICATION}.html`);
 });
 
 test('the 404 page links to every converter and stays out of search', async ({ site }) => {

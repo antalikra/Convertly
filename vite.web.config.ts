@@ -2,7 +2,7 @@ import { defineConfig, normalizePath, type Plugin } from 'vite';
 import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { buildSite, type SitePage } from './site/render';
-import { SITE_URL, EXTENSION_ID } from './site/config';
+import { SITE_URL, EXTENSION_ID, GOOGLE_VERIFICATION } from './site/config';
 
 // The website: the extension's converter in a plain web page plus one landing
 // page per task, built as a static site for GitHub Pages (`npm run build:web`
@@ -57,6 +57,12 @@ function sitePages(pages: SitePage[]): Plugin {
         type: 'asset',
         fileName: 'robots.txt',
         source: `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`,
+      });
+      // Search Console ownership check: exact content, no trailing newline.
+      this.emitFile({
+        type: 'asset',
+        fileName: `${GOOGLE_VERIFICATION}.html`,
+        source: `google-site-verification: ${GOOGLE_VERIFICATION}.html`,
       });
       // Social preview image: needs a fixed, unhashed URL.
       this.emitFile({
