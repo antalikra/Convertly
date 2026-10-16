@@ -15,7 +15,8 @@
   margin: 0 auto;
   padding: 0 var(--site-pad);
 }
-.site a { color: inherit; }
+/* Zero specificity, so buttons (.btn--primary: white text) keep their own colour. */
+:where(.site) a { color: inherit; }
 .site h1,
 .site h2 { color: var(--text-primary); }
 
@@ -27,7 +28,7 @@
   padding: 8px 14px;
   border-radius: var(--r-pill);
   background: var(--accent);
-  color: #fff !important;
+  color: #fff;
   text-decoration: none;
 }
 .skip:focus { left: 8px; }
@@ -38,9 +39,20 @@
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
 }
-::view-transition-group(site-nav-pill) {
-  animation-duration: 340ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+/* Same timing as the converter's own sliding pills and its theme crossfade. */
+::view-transition-group(site-nav-track),
+::view-transition-group(site-nav-pill),
+::view-transition-group(*.nav-label) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-emphasis);
+}
+::view-transition-group(site-nav-pill) { z-index: 1; }
+::view-transition-group(*.nav-label) { z-index: 2; }
+/* Pill and labels nest in the track's group, clipped to its rounded box, so
+   labels scrolled out of a narrow track stay hidden mid-transition. */
+::view-transition-group-children(site-nav-track) {
+  overflow: clip;
+  border-radius: var(--r-tile);
 }
 
 /* ---- Header: brand · tool links · converter tools (support, theme) + store ---- */
@@ -91,6 +103,8 @@
   background: var(--surface-toggle-off);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-tile);
+  view-transition-name: site-nav-track;
+  view-transition-group: contain;
 }
 .site-nav__track::-webkit-scrollbar { display: none; }
 .site-nav__link {
@@ -102,15 +116,21 @@
   min-height: 34px;
   padding: 8px 13px;
   border-radius: calc(var(--r-tile) - 4px);
-  color: var(--text-secondary) !important;
+  color: var(--text-secondary);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   text-decoration: none;
   white-space: nowrap;
   transition: color var(--dur-base) var(--ease-emphasis), background var(--dur-fast);
 }
-.site-nav__link:hover { color: var(--text-primary) !important; background: var(--surface-hover); }
-.site-nav__link[aria-current="page"] { color: #fff !important; background: none; }
+.site-nav__link:hover { color: var(--text-primary); background: var(--surface-hover); }
+.site-nav__link[aria-current="page"] { color: #fff; background: none; }
+/* Labels have their own view-transition names (render.ts) and sit above the
+   pill's layer, so neither a theme switch nor the slide covers the text. */
+.site-nav__label {
+  display: inline-block;
+  view-transition-class: nav-label;
+}
 .site-nav__pill {
   position: absolute;
   inset: 0;
@@ -266,7 +286,7 @@
 }
 .cta__note {
   margin: 0;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--fs-xs);
   text-align: center;
   line-height: 1.35;
@@ -376,7 +396,7 @@
 .site-footer__tools a { color: var(--text-primary); font-weight: var(--fw-medium); }
 .site-footer__note {
   margin: 4px 0 0;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--fs-xs);
 }
 

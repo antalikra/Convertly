@@ -88,13 +88,15 @@ ${extra}<script type="module" src="/site/main.ts"></script>
   }
 
   function header(l: SiteCopy, active?: Slug): string {
-    // The current page's link holds the lit pill; it carries a view-transition
-    // name, so going to another tool slides it over (see site.css).
-    const links = SLUGS.map((slug) =>
-      slug === active
-        ? `<a class="site-nav__link" aria-current="page" href="${href(l, slug)}"><span class="site-nav__pill" aria-hidden="true"></span>${esc(l.nav[slug])}</a>`
-        : `<a class="site-nav__link" href="${href(l, slug)}">${esc(l.nav[slug])}</a>`,
-    ).join('');
+    // The current page's link holds the lit pill. Pill and labels carry
+    // view-transition names, so going to another tool slides the pill under
+    // labels that stay put, and a theme switch keeps the labels on top (site.css).
+    const links = SLUGS.map((slug) => {
+      const label = `<span class="site-nav__label" style="view-transition-name: nav-${slug}">${esc(l.nav[slug])}</span>`;
+      return slug === active
+        ? `<a class="site-nav__link" aria-current="page" href="${href(l, slug)}"><span class="site-nav__pill" aria-hidden="true"></span>${label}</a>`
+        : `<a class="site-nav__link" href="${href(l, slug)}">${label}</a>`;
+    }).join('');
     return `<a class="skip" href="#converter">${esc(l.ui.skip)}</a>
 <header class="site-header wrap">
   <a class="site-brand" href="${href(l, HOME)}"><span class="brand__dot"></span>Convertly</a>

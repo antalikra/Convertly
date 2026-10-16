@@ -10,9 +10,13 @@ import './site.css';
 const root = document.getElementById('app');
 
 // The converter themes <body>; mirror it onto <html> so the area behind the body
-// (overscroll, a full-page capture) gets the theme's colour, not white.
+// (overscroll, a full-page capture) gets the theme's colour, not white, and
+// tint mobile browser chrome (theme-color) the same.
+const themeColor = document.querySelector('meta[name="theme-color"]');
 new MutationObserver(() => {
   document.documentElement.dataset.theme = document.body.dataset.theme;
+  const bg = getComputedStyle(document.body).getPropertyValue('--bg-solid').trim();
+  if (themeColor && bg) themeColor.setAttribute('content', bg);
 }).observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 
 if (root) {
